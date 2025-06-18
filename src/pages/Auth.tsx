@@ -21,7 +21,10 @@ const Auth = () => {
   }, [currentUser, navigate]);
 
   const handleAuthSuccess = () => {
-    navigate('/dashboard');
+    // Small delay to ensure Firebase auth state is updated
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 100);
   };
 
   return (

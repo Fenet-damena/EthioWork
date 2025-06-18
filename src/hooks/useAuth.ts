@@ -78,6 +78,7 @@ export const useAuthActions = () => {
 export const useUserProfile = (userId: string | null) => {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!userId) {
@@ -91,16 +92,32 @@ export const useUserProfile = (userId: string | null) => {
         const userDoc = await getDoc(doc(db, 'users', userId));
         if (userDoc.exists()) {
           setProfile(userDoc.data());
+        } else {
+          // If profile doesn't exist, create a default one based on auth user
+          console.log('No profile found, creating default profile');
+          setProfile({ role: 'job_seeker', profile: {} });
         }
-      } catch (error) {
-        console.error('Error fetching user profile:', error);
-      } finally {
         setLoading(false);
+      } catch (error: any) {
+        console.error('Error fetching user profile:', error);
+        
+        // Handle offline or connection issues
+        if (error.code === 'unavailable' && retryCount < 3) {
+          console.log(`Retrying profile fetch, attempt ${retryCount + 1}`);
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 1000 * (retryCount + 1)); // Exponential backoff
+        } else {
+          // If we can't fetch profile after retries, create a default one
+          console.log('Creating default profile due to connection issues');
+          setProfile({ role: 'job_seeker', profile: {} });
+          setLoading(false);
+        }
       }
     };
 
     fetchProfile();
-  }, [userId]);
+  }, [userId, retryCount]);
 
   return { profile, loading };
 };

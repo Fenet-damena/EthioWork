@@ -14,7 +14,11 @@ const Dashboard = () => {
   if (loading || profileLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
+          <div className="text-white text-lg">Loading your dashboard...</div>
+          <div className="text-gray-400 text-sm mt-2">Setting up your workspace</div>
+        </div>
       </div>
     );
   }
@@ -26,7 +30,10 @@ const Dashboard = () => {
   if (!profile) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Error loading profile</div>
+        <div className="text-center">
+          <div className="text-white text-lg mb-4">Setting up your profile...</div>
+          <div className="text-gray-400">This should only take a moment</div>
+        </div>
       </div>
     );
   }
