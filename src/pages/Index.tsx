@@ -101,16 +101,16 @@ const Index = () => {
             </div>
             
             <nav className="hidden md:flex items-center space-x-8">
-              <a href="#" className="text-gray-300 hover:text-blue-400 transition-colors font-medium">Explore</a>
+              <a href="/jobs" className="text-gray-300 hover:text-blue-400 transition-colors font-medium">Explore</a>
               <a href="#" className="text-gray-300 hover:text-purple-400 transition-colors font-medium">Companies</a>
               <a href="#" className="text-gray-300 hover:text-pink-400 transition-colors font-medium">Post Job</a>
             </nav>
             
             <div className="flex items-center space-x-3">
-              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10">
+              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10" onClick={() => window.location.href = '/auth'}>
                 Sign In
               </Button>
-              <Button className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-bold px-6 shadow-lg shadow-emerald-500/25">
+              <Button className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-bold px-6 shadow-lg shadow-emerald-500/25" onClick={() => window.location.href = '/auth'}>
                 Get Started
               </Button>
             </div>
