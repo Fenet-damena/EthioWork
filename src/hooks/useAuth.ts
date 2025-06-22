@@ -78,7 +78,6 @@ export const useAuthActions = () => {
 export const useUserProfile = (userId: string | null) => {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!userId) {
@@ -89,35 +88,50 @@ export const useUserProfile = (userId: string | null) => {
 
     const fetchProfile = async () => {
       try {
+        console.log('Fetching profile for user:', userId);
         const userDoc = await getDoc(doc(db, 'users', userId));
+        
         if (userDoc.exists()) {
-          setProfile(userDoc.data());
+          const userData = userDoc.data();
+          console.log('Profile found:', userData);
+          setProfile(userData);
         } else {
-          // If profile doesn't exist, create a default one based on auth user
           console.log('No profile found, creating default profile');
-          setProfile({ role: 'job_seeker', profile: {} });
+          // Create a default profile for the user
+          const defaultProfile = {
+            role: 'job_seeker',
+            profile: {
+              firstName: '',
+              lastName: '',
+              bio: '',
+              skills: [],
+              location: '',
+              phoneNumber: ''
+            },
+            email: auth.currentUser?.email,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          
+          await setDoc(doc(db, 'users', userId), defaultProfile);
+          setProfile(defaultProfile);
         }
-        setLoading(false);
       } catch (error: any) {
         console.error('Error fetching user profile:', error);
-        
-        // Handle offline or connection issues
-        if (error.code === 'unavailable' && retryCount < 3) {
-          console.log(`Retrying profile fetch, attempt ${retryCount + 1}`);
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-          }, 1000 * (retryCount + 1)); // Exponential backoff
-        } else {
-          // If we can't fetch profile after retries, create a default one
-          console.log('Creating default profile due to connection issues');
-          setProfile({ role: 'job_seeker', profile: {} });
-          setLoading(false);
-        }
+        // Fallback to default profile if there's an error
+        const fallbackProfile = {
+          role: 'job_seeker',
+          profile: {},
+          email: auth.currentUser?.email
+        };
+        setProfile(fallbackProfile);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchProfile();
-  }, [userId, retryCount]);
+  }, [userId]);
 
   return { profile, loading };
 };
