@@ -89,7 +89,15 @@ export const useUserProfile = (userId: string | null) => {
     const fetchProfile = async () => {
       try {
         console.log('Fetching profile for user:', userId);
-        const userDoc = await getDoc(doc(db, 'users', userId));
+        
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Profile fetch timeout')), 10000);
+        });
+
+        const profilePromise = getDoc(doc(db, 'users', userId));
+        
+        const userDoc = await Promise.race([profilePromise, timeoutPromise]) as any;
         
         if (userDoc.exists()) {
           const userData = userDoc.data();
@@ -118,11 +126,18 @@ export const useUserProfile = (userId: string | null) => {
         }
       } catch (error: any) {
         console.error('Error fetching user profile:', error);
-        // Fallback to default profile if there's an error
+        // Create fallback profile immediately to prevent infinite loading
         const fallbackProfile = {
           role: 'job_seeker',
-          profile: {},
-          email: auth.currentUser?.email
+          profile: {
+            firstName: '',
+            lastName: '',
+            bio: '',
+            skills: [],
+            location: '',
+            phoneNumber: ''
+          },
+          email: auth.currentUser?.email || 'user@example.com'
         };
         setProfile(fallbackProfile);
       } finally {

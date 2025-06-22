@@ -11,13 +11,23 @@ const Dashboard = () => {
   const { currentUser, loading } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile(currentUser?.uid || null);
 
-  if (loading || profileLoading) {
+  // Show loading for maximum 15 seconds
+  const [showFallback, setShowFallback] = React.useState(false);
+  
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowFallback(true);
+    }, 15000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
-          <div className="text-white text-lg">Loading your dashboard...</div>
-          <div className="text-gray-400 text-sm mt-2">Setting up your workspace</div>
+          <div className="text-white text-lg">Loading authentication...</div>
         </div>
       </div>
     );
@@ -27,18 +37,33 @@ const Dashboard = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!profile) {
+  if (profileLoading && !showFallback) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="text-white text-lg mb-4">Setting up your profile...</div>
-          <div className="text-gray-400">This should only take a moment</div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
+          <div className="text-white text-lg">Setting up your dashboard...</div>
+          <div className="text-gray-400 text-sm mt-2">This should only take a moment</div>
         </div>
       </div>
     );
   }
 
-  switch (profile.role) {
+  // If still loading after timeout or no profile, create default profile
+  const userProfile = profile || {
+    role: 'job_seeker',
+    profile: {
+      firstName: '',
+      lastName: '',
+      bio: '',
+      skills: [],
+      location: '',
+      phoneNumber: ''
+    },
+    email: currentUser.email
+  };
+
+  switch (userProfile.role) {
     case 'job_seeker':
       return <JobSeekerDashboard />;
     case 'employer':
@@ -46,7 +71,7 @@ const Dashboard = () => {
     case 'admin':
       return <AdminDashboard />;
     default:
-      return <Navigate to="/auth" replace />;
+      return <JobSeekerDashboard />;
   }
 };
 
