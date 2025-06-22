@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,7 +70,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
             <Label htmlFor="role" className="text-gray-300">I am a</Label>
             <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
               <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
-                <SelectValue />
+                <SelectValue placeholder="Select your role" />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-700">
                 <SelectItem value="job_seeker" className="text-white hover:bg-gray-700">Job Seeker</SelectItem>
