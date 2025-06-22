@@ -28,14 +28,14 @@ const JobBrowsing = () => {
         (job.skills && job.skills.some((skill: string) => skill.toLowerCase().includes(searchTerm.toLowerCase())));
       
       const matchesLocation = !location || job.location.toLowerCase().includes(location.toLowerCase());
-      const matchesJobType = !jobType || job.type === jobType;
-      const matchesWorkMode = !workMode || job.workMode === workMode;
+      const matchesJobType = !jobType || jobType === 'all' || job.type === jobType;
+      const matchesWorkMode = !workMode || workMode === 'all' || job.workMode === workMode;
       
       // Simple salary range filter (you can make this more sophisticated)
-      const matchesSalary = !salaryRange || true; // Implement based on your salary structure
+      const matchesSalary = !salaryRange || salaryRange === 'all' || true; // Implement based on your salary structure
       
       // Date filter - you can implement based on createdAt
-      const matchesDate = !datePosted || true;
+      const matchesDate = !datePosted || datePosted === 'all' || true;
 
       return matchesSearch && matchesLocation && matchesJobType && matchesWorkMode && matchesSalary && matchesDate;
     });
@@ -105,7 +105,7 @@ const JobBrowsing = () => {
                   <SelectValue placeholder="Job Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="full-time">Full-time</SelectItem>
                   <SelectItem value="part-time">Part-time</SelectItem>
                   <SelectItem value="contract">Contract</SelectItem>
@@ -118,7 +118,7 @@ const JobBrowsing = () => {
                   <SelectValue placeholder="Work Mode" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Modes</SelectItem>
+                  <SelectItem value="all">All Modes</SelectItem>
                   <SelectItem value="remote">Remote</SelectItem>
                   <SelectItem value="onsite">Onsite</SelectItem>
                   <SelectItem value="hybrid">Hybrid</SelectItem>
@@ -130,7 +130,7 @@ const JobBrowsing = () => {
                   <SelectValue placeholder="Salary Range" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Ranges</SelectItem>
+                  <SelectItem value="all">All Ranges</SelectItem>
                   <SelectItem value="0-50k">0 - 50k ETB</SelectItem>
                   <SelectItem value="50k-100k">50k - 100k ETB</SelectItem>
                   <SelectItem value="100k+">100k+ ETB</SelectItem>
@@ -142,7 +142,7 @@ const JobBrowsing = () => {
                   <SelectValue placeholder="Date Posted" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any Time</SelectItem>
+                  <SelectItem value="all">Any Time</SelectItem>
                   <SelectItem value="today">Today</SelectItem>
                   <SelectItem value="week">Past Week</SelectItem>
                   <SelectItem value="month">Past Month</SelectItem>
