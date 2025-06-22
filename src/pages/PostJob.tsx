@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +8,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, MapPin, Building2, DollarSign } from 'lucide-react';
+import { Plus, X, MapPin, Building2, DollarSign, ArrowLeft } from 'lucide-react';
+import { useJobs } from '@/hooks/useJobs';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const PostJob = () => {
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const { createJob } = useJobs();
+  const { toast } = useToast();
+  
+  const [loading, setLoading] = useState(false);
   const [jobData, setJobData] = useState({
     title: '',
     company: '',
@@ -47,15 +57,57 @@ const PostJob = () => {
     setSkills(prev => prev.filter(skill => skill !== skillToRemove));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Job posting data:', { ...jobData, skills });
-    // TODO: Implement job posting logic
+    
+    if (!currentUser) {
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const jobPayload = {
+        ...jobData,
+        employerId: currentUser.uid,
+        skills,
+        salaryMin: jobData.salaryMin ? parseInt(jobData.salaryMin) : null,
+        salaryMax: jobData.salaryMax ? parseInt(jobData.salaryMax) : null,
+        expiryDate: jobData.expiryDate ? new Date(jobData.expiryDate) : null
+      };
+
+      await createJob(jobPayload);
+      
+      toast({
+        title: "Job posted successfully",
+        description: "Your job listing is now live and visible to job seekers."
+      });
+
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: "Failed to post job",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-4xl mx-auto px-6 py-8">
+        <Button 
+          onClick={() => navigate('/dashboard')} 
+          variant="ghost" 
+          className="mb-6 text-gray-400 hover:text-white"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
+        </Button>
+
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">
             Post a New Job
@@ -74,30 +126,32 @@ const PostJob = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="title" className="text-gray-300">Job Title</Label>
+                  <Label htmlFor="title" className="text-gray-300">Job Title *</Label>
                   <Input
                     id="title"
                     value={jobData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
                     className="bg-gray-800 border-gray-700 text-white"
                     placeholder="e.g., Senior Software Developer"
+                    required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="company" className="text-gray-300">Company</Label>
+                  <Label htmlFor="company" className="text-gray-300">Company *</Label>
                   <Input
                     id="company"
                     value={jobData.company}
                     onChange={(e) => handleInputChange('company', e.target.value)}
                     className="bg-gray-800 border-gray-700 text-white"
                     placeholder="e.g., TechCorp Ethiopia"
+                    required
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="location" className="text-gray-300">Location</Label>
+                  <Label htmlFor="location" className="text-gray-300">Location *</Label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                     <Input
@@ -106,11 +160,12 @@ const PostJob = () => {
                       onChange={(e) => handleInputChange('location', e.target.value)}
                       className="pl-10 bg-gray-800 border-gray-700 text-white"
                       placeholder="e.g., Addis Ababa, Ethiopia"
+                      required
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="category" className="text-gray-300">Category</Label>
+                  <Label htmlFor="category" className="text-gray-300">Category *</Label>
                   <Select value={jobData.category} onValueChange={(value) => handleInputChange('category', value)}>
                     <SelectTrigger className="bg-gray-800 border-gray-700">
                       <SelectValue placeholder="Select category" />
@@ -129,7 +184,7 @@ const PostJob = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="type" className="text-gray-300">Job Type</Label>
+                  <Label htmlFor="type" className="text-gray-300">Job Type *</Label>
                   <Select value={jobData.type} onValueChange={(value) => handleInputChange('type', value)}>
                     <SelectTrigger className="bg-gray-800 border-gray-700">
                       <SelectValue placeholder="Select job type" />
@@ -143,7 +198,7 @@ const PostJob = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="workMode" className="text-gray-300">Work Mode</Label>
+                  <Label htmlFor="workMode" className="text-gray-300">Work Mode *</Label>
                   <Select value={jobData.workMode} onValueChange={(value) => handleInputChange('workMode', value)}>
                     <SelectTrigger className="bg-gray-800 border-gray-700">
                       <SelectValue placeholder="Select work mode" />
@@ -212,7 +267,7 @@ const PostJob = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="description" className="text-gray-300">Description</Label>
+                <Label htmlFor="description" className="text-gray-300">Description *</Label>
                 <Textarea
                   id="description"
                   value={jobData.description}
@@ -220,6 +275,7 @@ const PostJob = () => {
                   className="bg-gray-800 border-gray-700 text-white"
                   rows={4}
                   placeholder="Describe the role and what the candidate will be doing..."
+                  required
                 />
               </div>
 
@@ -254,6 +310,7 @@ const PostJob = () => {
                     <Badge key={index} variant="secondary" className="bg-emerald-500/20 text-emerald-400">
                       {skill}
                       <Button
+                        type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => removeSkill(skill)}
@@ -292,11 +349,20 @@ const PostJob = () => {
           </Card>
 
           <div className="flex justify-end space-x-4">
-            <Button variant="outline" type="button" className="border-gray-700">
-              Save as Draft
+            <Button 
+              variant="outline" 
+              type="button" 
+              className="border-gray-700"
+              onClick={() => navigate('/dashboard')}
+            >
+              Cancel
             </Button>
-            <Button type="submit" className="bg-gradient-to-r from-emerald-500 to-blue-500">
-              Post Job
+            <Button 
+              type="submit" 
+              className="bg-gradient-to-r from-emerald-500 to-blue-500"
+              disabled={loading}
+            >
+              {loading ? 'Posting...' : 'Post Job'}
             </Button>
           </div>
         </form>
