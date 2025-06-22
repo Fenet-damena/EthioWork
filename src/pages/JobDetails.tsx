@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MapPin, Building2, Clock, DollarSign, Briefcase, Heart, Bookmark, Share2, Upload, ArrowLeft } from 'lucide-react';
-import { useJob } from '@/hooks/useJob';
+import { useJob } from '@/hooks/useJobs';
 import { useApplications } from '@/hooks/useApplications';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadFile } from '@/services/firebase';
