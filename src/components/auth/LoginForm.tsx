@@ -23,17 +23,33 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, on
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await login(email, password);
+    
+    if (!email || !password) {
       toast({
-        title: "Login successful",
+        title: "Missing Information",
+        description: "Please enter both email and password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log('Attempting login with email:', email);
+      await login(email, password);
+      
+      toast({
+        title: "Login Successful",
         description: "Welcome back to EthioWork!",
       });
-      onSuccess?.();
-    } catch (err) {
+      
+      setTimeout(() => {
+        onSuccess?.();
+      }, 100);
+    } catch (err: any) {
+      console.error('Login form error:', err);
       toast({
-        title: "Login failed",
-        description: error || "Please check your credentials and try again.",
+        title: "Login Failed",
+        description: err.message || "Please check your credentials and try again.",
         variant: "destructive",
       });
     }
@@ -56,6 +72,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, on
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="bg-gray-800/50 border-gray-700 text-white"
+              placeholder="Enter your email"
               required
             />
           </div>
@@ -68,6 +85,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, on
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="bg-gray-800/50 border-gray-700 text-white"
+              placeholder="Enter your password"
               required
             />
           </div>

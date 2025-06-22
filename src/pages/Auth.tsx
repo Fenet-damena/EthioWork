@@ -16,15 +16,17 @@ const Auth = () => {
   // Redirect if already logged in
   React.useEffect(() => {
     if (currentUser) {
+      console.log('User already authenticated, redirecting to dashboard');
       navigate('/dashboard');
     }
   }, [currentUser, navigate]);
 
   const handleAuthSuccess = () => {
+    console.log('Authentication successful, redirecting to dashboard');
     // Small delay to ensure Firebase auth state is updated
     setTimeout(() => {
       navigate('/dashboard');
-    }, 100);
+    }, 500);
   };
 
   return (

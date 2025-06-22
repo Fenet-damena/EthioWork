@@ -12,22 +12,41 @@ export const useAuthActions = () => {
   const register = async (email: string, password: string, role: UserRole, profileData: any) => {
     setLoading(true);
     setError(null);
+    console.log('Starting registration for:', email, 'with role:', role);
+    
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('User created successfully:', user.uid);
       
       // Create user profile in Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      const userDoc = {
         email,
         role,
         profile: profileData,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      };
+      
+      console.log('Creating user document:', userDoc);
+      await setDoc(doc(db, 'users', user.uid), userDoc);
+      console.log('User profile created successfully');
       
       return user;
     } catch (err: any) {
-      setError(err.message);
-      throw err;
+      console.error('Registration error:', err);
+      let errorMessage = err.message;
+      
+      // Provide user-friendly error messages
+      if (err.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already registered. Please use a different email or try signing in.';
+      } else if (err.code === 'auth/weak-password') {
+        errorMessage = 'Password should be at least 6 characters long.';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = 'Please enter a valid email address.';
+      }
+      
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -36,12 +55,31 @@ export const useAuthActions = () => {
   const login = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
+    console.log('Starting login for:', email);
+    
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Login successful for user:', user.uid);
       return user;
     } catch (err: any) {
-      setError(err.message);
-      throw err;
+      console.error('Login error:', err);
+      let errorMessage = err.message;
+      
+      // Provide user-friendly error messages
+      if (err.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email. Please check your email or create a new account.';
+      } else if (err.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (err.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many failed attempts. Please try again later.';
+      } else if (err.code === 'auth/invalid-credential') {
+        errorMessage = 'Invalid email or password. Please check your credentials.';
+      }
+      
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -51,7 +89,9 @@ export const useAuthActions = () => {
     setLoading(true);
     try {
       await signOut(auth);
+      console.log('Logout successful');
     } catch (err: any) {
+      console.error('Logout error:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -64,9 +104,19 @@ export const useAuthActions = () => {
     setError(null);
     try {
       await sendPasswordResetEmail(auth, email);
+      console.log('Password reset email sent to:', email);
     } catch (err: any) {
-      setError(err.message);
-      throw err;
+      console.error('Password reset error:', err);
+      let errorMessage = err.message;
+      
+      if (err.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email address.';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = 'Please enter a valid email address.';
+      }
+      
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }

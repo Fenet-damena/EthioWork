@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,30 +29,90 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validation
+    if (!email || !password || !confirmPassword) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (password !== confirmPassword) {
       toast({
-        title: "Password mismatch",
-        description: "Passwords do not match.",
+        title: "Password Mismatch",
+        description: "Passwords do not match. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Weak Password",
+        description: "Password should be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (role === 'job_seeker' && (!firstName || !lastName)) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter your first and last name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (role === 'employer' && !companyName) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter your company name.",
         variant: "destructive",
       });
       return;
     }
 
     const profileData = role === 'employer' 
-      ? { companyName, industry: '', description: '', numberOfEmployees: '', location: '' }
-      : { firstName, lastName, bio: '', skills: [], location: '' };
+      ? { 
+          companyName, 
+          industry: '', 
+          description: '', 
+          numberOfEmployees: '', 
+          location: '',
+          website: '',
+          contactPerson: ''
+        }
+      : { 
+          firstName, 
+          lastName, 
+          bio: '', 
+          skills: [], 
+          location: '',
+          phoneNumber: '',
+          experience: '',
+          education: ''
+        };
 
     try {
+      console.log('Attempting registration with:', { email, role, profileData });
       await register(email, password, role, profileData);
+      
       toast({
-        title: "Registration successful",
-        description: "Welcome to EthioWork!",
+        title: "Registration Successful",
+        description: "Welcome to EthioWork! Your account has been created successfully.",
       });
-      onSuccess?.();
-    } catch (err) {
+      
+      setTimeout(() => {
+        onSuccess?.();
+      }, 100);
+    } catch (err: any) {
+      console.error('Registration form error:', err);
       toast({
-        title: "Registration failed",
-        description: error || "Please try again.",
+        title: "Registration Failed",
+        description: err.message || "An error occurred during registration. Please try again.",
         variant: "destructive",
       });
     }
@@ -89,6 +150,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className="bg-gray-800/50 border-gray-700 text-white"
+                    placeholder="First name"
                     required
                   />
                 </div>
@@ -99,6 +161,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     className="bg-gray-800/50 border-gray-700 text-white"
+                    placeholder="Last name"
                     required
                   />
                 </div>
@@ -112,6 +175,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 className="bg-gray-800/50 border-gray-700 text-white"
+                placeholder="Your company name"
                 required
               />
             </div>
@@ -125,6 +189,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="bg-gray-800/50 border-gray-700 text-white"
+              placeholder="Enter your email"
               required
             />
           </div>
@@ -137,6 +202,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="bg-gray-800/50 border-gray-700 text-white"
+              placeholder="Create a password (min 6 characters)"
               required
             />
           </div>
@@ -149,6 +215,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="bg-gray-800/50 border-gray-700 text-white"
+              placeholder="Confirm your password"
               required
             />
           </div>
