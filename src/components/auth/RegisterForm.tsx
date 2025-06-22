@@ -73,9 +73,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
               <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="job_seeker">Job Seeker</SelectItem>
-                <SelectItem value="employer">Employer</SelectItem>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="job_seeker" className="text-white hover:bg-gray-700">Job Seeker</SelectItem>
+                <SelectItem value="employer" className="text-white hover:bg-gray-700">Employer</SelectItem>
               </SelectContent>
             </Select>
           </div>
