@@ -14,7 +14,8 @@ import {
   Building2,
   MapPin,
   Clock,
-  DollarSign
+  DollarSign,
+  UserSearch
 } from 'lucide-react';
 import { useEmployerJobs } from '@/hooks/useJobs';
 import { useApplications } from '@/hooks/useApplications';
@@ -28,9 +29,8 @@ const EmployerDashboard = () => {
   const { jobs, loading } = useEmployerJobs();
 
   const totalApplications = React.useMemo(() => {
-    // This would need to be calculated from all applications for this employer's jobs
-    return 0; // Placeholder
-  }, []);
+    return jobs.reduce((total: number, job: any) => total + (job.applicationsCount || 0), 0);
+  }, [jobs]);
 
   const activeJobs = jobs.filter((job: any) => job.status === 'active');
   const recentJobs = jobs.slice(0, 5);
@@ -72,6 +72,14 @@ const EmployerDashboard = () => {
             >
               <Plus className="h-4 w-4 mr-2" />
               Post New Job
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate('/job-seekers')}
+              className="border-gray-700"
+            >
+              <UserSearch className="h-4 w-4 mr-2" />
+              Find Candidates
             </Button>
             <Button 
               variant="outline"
@@ -163,15 +171,16 @@ const EmployerDashboard = () => {
               </Button>
               
               <Button 
+                onClick={() => navigate('/job-seekers')}
                 variant="outline" 
                 className="border-gray-700 justify-start h-auto p-4"
               >
                 <div className="text-left">
                   <div className="flex items-center mb-2">
-                    <Users className="h-5 w-5 mr-2 text-blue-400" />
-                    <span className="font-medium">View All Applicants</span>
+                    <UserSearch className="h-5 w-5 mr-2 text-blue-400" />
+                    <span className="font-medium">Browse Candidates</span>
                   </div>
-                  <p className="text-sm text-gray-400">Review applications from job seekers</p>
+                  <p className="text-sm text-gray-400">View job seeker profiles and find talent</p>
                 </div>
               </Button>
               
@@ -220,12 +229,10 @@ const EmployerDashboard = () => {
                             <Clock className="h-3 w-3 mr-1" />
                             {new Date(job.createdAt?.toDate?.() || job.createdAt).toLocaleDateString()}
                           </div>
-                          {job.salaryMin && job.salaryMax && (
-                            <div className="flex items-center">
-                              <DollarSign className="h-3 w-3 mr-1" />
-                              {job.salaryMin} - {job.salaryMax} {job.currency}
-                            </div>
-                          )}
+                          <div className="flex items-center">
+                            <Users className="h-3 w-3 mr-1" />
+                            {job.applicationsCount || 0} applications
+                          </div>
                         </div>
                       </div>
                     </div>
