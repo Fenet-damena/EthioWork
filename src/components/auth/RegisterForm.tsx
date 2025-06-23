@@ -39,6 +39,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
       return;
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (password !== confirmPassword) {
       toast({
         title: "Password Mismatch",
@@ -105,9 +116,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
         description: "Welcome to EthioWork! Your account has been created successfully.",
       });
       
+      // Add a small delay to show the success message
       setTimeout(() => {
         onSuccess?.();
-      }, 100);
+      }, 1000);
     } catch (err: any) {
       console.error('Registration form error:', err);
       toast({
@@ -129,8 +141,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="role" className="text-gray-300">I am a</Label>
-            <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+            <Select value={role} onValueChange={(value) => setRole(value as UserRole)} disabled={loading}>
+              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white focus:border-emerald-400">
                 <SelectValue placeholder="Select your role" />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-700">
@@ -149,9 +161,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
                     id="firstName"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="bg-gray-800/50 border-gray-700 text-white"
+                    className="bg-gray-800/50 border-gray-700 text-white focus:border-emerald-400 focus:ring-emerald-400"
                     placeholder="First name"
                     required
+                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -160,9 +173,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
                     id="lastName"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="bg-gray-800/50 border-gray-700 text-white"
+                    className="bg-gray-800/50 border-gray-700 text-white focus:border-emerald-400 focus:ring-emerald-400"
                     placeholder="Last name"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -174,9 +188,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
                 id="companyName"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                className="bg-gray-800/50 border-gray-700 text-white"
+                className="bg-gray-800/50 border-gray-700 text-white focus:border-emerald-400 focus:ring-emerald-400"
                 placeholder="Your company name"
                 required
+                disabled={loading}
               />
             </div>
           )}
@@ -188,9 +203,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-gray-800/50 border-gray-700 text-white"
+              className="bg-gray-800/50 border-gray-700 text-white focus:border-emerald-400 focus:ring-emerald-400"
               placeholder="Enter your email"
               required
+              disabled={loading}
             />
           </div>
           
@@ -201,9 +217,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-gray-800/50 border-gray-700 text-white"
+              className="bg-gray-800/50 border-gray-700 text-white focus:border-emerald-400 focus:ring-emerald-400"
               placeholder="Create a password (min 6 characters)"
               required
+              disabled={loading}
             />
           </div>
           
@@ -214,18 +231,26 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="bg-gray-800/50 border-gray-700 text-white"
+              className="bg-gray-800/50 border-gray-700 text-white focus:border-emerald-400 focus:ring-emerald-400"
               placeholder="Confirm your password"
               required
+              disabled={loading}
             />
           </div>
           
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600"
+            className="w-full bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 disabled:opacity-50"
             disabled={loading}
           >
-            {loading ? 'Creating account...' : 'Create Account'}
+            {loading ? (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Creating account...</span>
+              </div>
+            ) : (
+              'Create Account'
+            )}
           </Button>
           
           <div className="text-center">
@@ -233,7 +258,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
             <button
               type="button"
               onClick={onSwitchToLogin}
-              className="text-blue-400 hover:text-blue-300"
+              className="text-blue-400 hover:text-blue-300 disabled:opacity-50"
+              disabled={loading}
             >
               Sign in
             </button>

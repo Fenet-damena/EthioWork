@@ -33,6 +33,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, on
       return;
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       console.log('Attempting login with email:', email);
       await login(email, password);
@@ -42,9 +53,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, on
         description: "Welcome back to EthioWork!",
       });
       
+      // Add a small delay to show the success message
       setTimeout(() => {
         onSuccess?.();
-      }, 100);
+      }, 1000);
     } catch (err: any) {
       console.error('Login form error:', err);
       toast({
@@ -71,9 +83,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, on
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-gray-800/50 border-gray-700 text-white"
+              className="bg-gray-800/50 border-gray-700 text-white focus:border-emerald-400 focus:ring-emerald-400"
               placeholder="Enter your email"
               required
+              disabled={loading}
             />
           </div>
           
@@ -84,9 +97,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, on
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-gray-800/50 border-gray-700 text-white"
+              className="bg-gray-800/50 border-gray-700 text-white focus:border-emerald-400 focus:ring-emerald-400"
               placeholder="Enter your password"
               required
+              disabled={loading}
             />
           </div>
           
@@ -97,6 +111,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, on
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="rounded"
+                disabled={loading}
               />
               <span>Remember me</span>
             </label>
@@ -104,7 +119,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, on
             <button
               type="button"
               onClick={onForgotPassword}
-              className="text-sm text-blue-400 hover:text-blue-300"
+              className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50"
+              disabled={loading}
             >
               Forgot password?
             </button>
@@ -112,10 +128,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, on
           
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600"
+            className="w-full bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 disabled:opacity-50"
             disabled={loading}
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Signing in...</span>
+              </div>
+            ) : (
+              'Sign In'
+            )}
           </Button>
           
           <div className="text-center">
@@ -123,7 +146,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, on
             <button
               type="button"
               onClick={onSwitchToRegister}
-              className="text-blue-400 hover:text-blue-300"
+              className="text-blue-400 hover:text-blue-300 disabled:opacity-50"
+              disabled={loading}
             >
               Sign up
             </button>

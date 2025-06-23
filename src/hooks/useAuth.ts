@@ -20,11 +20,13 @@ export const useAuthActions = () => {
       
       // Create user profile in Firestore
       const userDoc = {
+        uid: user.uid,
         email,
         role,
         profile: profileData,
         createdAt: new Date(),
         updatedAt: new Date(),
+        isActive: true,
       };
       
       console.log('Creating user document:', userDoc);
@@ -43,6 +45,8 @@ export const useAuthActions = () => {
         errorMessage = 'Password should be at least 6 characters long.';
       } else if (err.code === 'auth/invalid-email') {
         errorMessage = 'Please enter a valid email address.';
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
       }
       
       setError(errorMessage);
@@ -60,6 +64,31 @@ export const useAuthActions = () => {
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful for user:', user.uid);
+      
+      // Verify user profile exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        console.log('User profile not found, creating default profile');
+        // Create a basic profile if it doesn't exist
+        const defaultProfile = {
+          uid: user.uid,
+          email: user.email,
+          role: 'job_seeker' as UserRole,
+          profile: {
+            firstName: '',
+            lastName: '',
+            bio: '',
+            skills: [],
+            location: '',
+            phoneNumber: ''
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isActive: true,
+        };
+        await setDoc(doc(db, 'users', user.uid), defaultProfile);
+      }
+      
       return user;
     } catch (err: any) {
       console.error('Login error:', err);
@@ -76,6 +105,8 @@ export const useAuthActions = () => {
         errorMessage = 'Too many failed attempts. Please try again later.';
       } else if (err.code === 'auth/invalid-credential') {
         errorMessage = 'Invalid email or password. Please check your credentials.';
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
       }
       
       setError(errorMessage);
@@ -113,6 +144,8 @@ export const useAuthActions = () => {
         errorMessage = 'No account found with this email address.';
       } else if (err.code === 'auth/invalid-email') {
         errorMessage = 'Please enter a valid email address.';
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
       }
       
       setError(errorMessage);
@@ -140,14 +173,7 @@ export const useUserProfile = (userId: string | null) => {
       try {
         console.log('Fetching profile for user:', userId);
         
-        // Add timeout to prevent infinite loading
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Profile fetch timeout')), 10000);
-        });
-
-        const profilePromise = getDoc(doc(db, 'users', userId));
-        
-        const userDoc = await Promise.race([profilePromise, timeoutPromise]) as any;
+        const userDoc = await getDoc(doc(db, 'users', userId));
         
         if (userDoc.exists()) {
           const userData = userDoc.data();
@@ -157,6 +183,7 @@ export const useUserProfile = (userId: string | null) => {
           console.log('No profile found, creating default profile');
           // Create a default profile for the user
           const defaultProfile = {
+            uid: userId,
             role: 'job_seeker',
             profile: {
               firstName: '',
@@ -168,7 +195,8 @@ export const useUserProfile = (userId: string | null) => {
             },
             email: auth.currentUser?.email,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            isActive: true,
           };
           
           await setDoc(doc(db, 'users', userId), defaultProfile);
@@ -178,6 +206,7 @@ export const useUserProfile = (userId: string | null) => {
         console.error('Error fetching user profile:', error);
         // Create fallback profile immediately to prevent infinite loading
         const fallbackProfile = {
+          uid: userId,
           role: 'job_seeker',
           profile: {
             firstName: '',
@@ -187,7 +216,8 @@ export const useUserProfile = (userId: string | null) => {
             location: '',
             phoneNumber: ''
           },
-          email: auth.currentUser?.email || 'user@example.com'
+          email: auth.currentUser?.email || 'user@example.com',
+          isActive: true,
         };
         setProfile(fallbackProfile);
       } finally {
