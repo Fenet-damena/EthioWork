@@ -1,4 +1,3 @@
-
 import { 
   collection, 
   doc, 
@@ -53,6 +52,68 @@ export const updateUserProfile = async (userId: string, data: any) => {
     });
   } catch (error) {
     console.error('Error updating user profile:', error);
+    throw error;
+  }
+};
+
+// Admin User Management Operations
+export const getAllUsers = async () => {
+  try {
+    console.log('Fetching all users for admin');
+    const usersQuery = query(
+      collection(db, 'users'),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(usersQuery);
+    const users = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    console.log('Found users:', users.length);
+    return users;
+  } catch (error) {
+    console.error('Error fetching all users:', error);
+    throw error;
+  }
+};
+
+export const banUser = async (userId: string) => {
+  try {
+    console.log('Banning user:', userId);
+    await updateDoc(doc(db, 'users', userId), {
+      banned: true,
+      isActive: false,
+      updatedAt: new Date()
+    });
+    console.log('User banned successfully');
+  } catch (error) {
+    console.error('Error banning user:', error);
+    throw error;
+  }
+};
+
+export const unbanUser = async (userId: string) => {
+  try {
+    console.log('Unbanning user:', userId);
+    await updateDoc(doc(db, 'users', userId), {
+      banned: false,
+      isActive: true,
+      updatedAt: new Date()
+    });
+    console.log('User unbanned successfully');
+  } catch (error) {
+    console.error('Error unbanning user:', error);
+    throw error;
+  }
+};
+
+export const deleteUser = async (userId: string) => {
+  try {
+    console.log('Deleting user:', userId);
+    await deleteDoc(doc(db, 'users', userId));
+    console.log('User deleted successfully');
+  } catch (error) {
+    console.error('Error deleting user:', error);
     throw error;
   }
 };
