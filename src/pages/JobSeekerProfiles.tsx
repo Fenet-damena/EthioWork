@@ -8,12 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
   Search, 
-  User, 
   MapPin, 
-  Mail, 
+  User, 
+  Mail,
   Phone,
-  Briefcase,
-  Star
+  ExternalLink,
+  Download,
+  Github,
+  Linkedin,
+  Globe
 } from 'lucide-react';
 import { getAllUsers } from '@/services/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,48 +24,66 @@ import { useAuth } from '@/contexts/AuthContext';
 const JobSeekerProfiles = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const [profiles, setProfiles] = useState([]);
+  const [jobSeekers, setJobSeekers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredProfiles, setFilteredProfiles] = useState([]);
+  const [locationFilter, setLocationFilter] = useState('');
+  const [filteredJobSeekers, setFilteredJobSeekers] = useState([]);
 
   useEffect(() => {
-    const fetchProfiles = async () => {
+    const fetchJobSeekers = async () => {
       try {
+        console.log('Fetching job seekers...');
         const users = await getAllUsers();
-        const jobSeekers = users.filter((user: any) => user.role === 'job_seeker');
-        setProfiles(jobSeekers);
-        setFilteredProfiles(jobSeekers);
+        const seekers = users.filter((user: any) => user.role === 'job_seeker');
+        console.log('Job seekers found:', seekers.length);
+        setJobSeekers(seekers);
+        setFilteredJobSeekers(seekers);
       } catch (error) {
-        console.error('Error fetching profiles:', error);
+        console.error('Error fetching job seekers:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfiles();
+    fetchJobSeekers();
   }, []);
 
   useEffect(() => {
-    const filtered = profiles.filter((profile: any) => {
-      const fullName = `${profile.profile?.firstName || ''} ${profile.profile?.lastName || ''}`.toLowerCase();
-      const skills = profile.profile?.skills?.join(' ').toLowerCase() || '';
-      const location = profile.profile?.location?.toLowerCase() || '';
+    let filtered = jobSeekers.filter((seeker: any) => {
+      const profile = seeker.profile;
+      const matchesSearch = 
+        profile?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        profile?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        profile?.bio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        profile?.skills?.some((skill: string) => skill.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      return fullName.includes(searchTerm.toLowerCase()) ||
-             skills.includes(searchTerm.toLowerCase()) ||
-             location.includes(searchTerm.toLowerCase());
+      const matchesLocation = !locationFilter || profile?.location?.toLowerCase().includes(locationFilter.toLowerCase());
+
+      return matchesSearch && matchesLocation;
     });
-    
-    setFilteredProfiles(filtered);
-  }, [profiles, searchTerm]);
+
+    setFilteredJobSeekers(filtered);
+  }, [jobSeekers, searchTerm, locationFilter]);
+
+  const handleContactSeeker = (seeker: any) => {
+    if (seeker.email) {
+      window.open(`mailto:${seeker.email}`, '_blank');
+    }
+  };
+
+  const handleViewResume = (resumeUrl: string) => {
+    if (resumeUrl) {
+      window.open(resumeUrl, '_blank');
+    }
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
-          <div className="text-white text-lg">Loading profiles...</div>
+          <div className="text-white text-lg">Loading job seekers...</div>
         </div>
       </div>
     );
@@ -85,21 +106,42 @@ const JobSeekerProfiles = () => {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">
               Job Seeker Profiles
             </h1>
-            <p className="text-gray-400 text-lg">Find talented candidates for your company</p>
+            <p className="text-gray-400 text-lg">Find and connect with talented professionals</p>
           </div>
         </div>
 
-        {/* Search */}
+        {/* Search and Filters */}
         <Card className="bg-gray-900/50 border-gray-800 mb-8">
           <CardContent className="p-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-              <Input
-                placeholder="Search by name, skills, or location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-800 border-gray-700 text-white"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <Input
+                  placeholder="Search by name, skills, or bio..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-gray-800 border-gray-700 text-white"
+                />
+              </div>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <Input
+                  placeholder="Location"
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  className="pl-10 bg-gray-800 border-gray-700 text-white"
+                />
+              </div>
+              <Button
+                onClick={() => {
+                  setSearchTerm('');
+                  setLocationFilter('');
+                }}
+                variant="outline"
+                className="border-gray-700"
+              >
+                Clear Filters
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -107,93 +149,145 @@ const JobSeekerProfiles = () => {
         {/* Results */}
         <div className="flex justify-between items-center mb-6">
           <div className="text-gray-400">
-            Showing {filteredProfiles.length} profiles
+            Showing {filteredJobSeekers.length} job seekers
           </div>
         </div>
 
-        {/* Profiles Grid */}
+        {/* Job Seekers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProfiles.length > 0 ? (
-            filteredProfiles.map((profile: any) => (
+          {filteredJobSeekers.length > 0 ? (
+            filteredJobSeekers.map((seeker: any) => (
               <Card 
-                key={profile.id} 
+                key={seeker.id} 
                 className="bg-gray-900/30 border-gray-800 hover:border-gray-700 transition-all"
               >
                 <CardContent className="p-6">
-                  <div className="text-center mb-4">
-                    <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <User className="h-8 w-8 text-white" />
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-r from-emerald-500 to-blue-500 flex items-center justify-center overflow-hidden">
+                      {seeker.profile?.profileImageUrl ? (
+                        <img 
+                          src={seeker.profile.profileImageUrl} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="h-8 w-8 text-white" />
+                      )}
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-1">
-                      {profile.profile?.firstName || 'Anonymous'} {profile.profile?.lastName || 'User'}
-                    </h3>
-                    {profile.profile?.location && (
-                      <div className="flex items-center justify-center text-gray-400 text-sm mb-2">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {profile.profile.location}
-                      </div>
+                    {seeker.profile?.experience && (
+                      <Badge 
+                        variant="outline" 
+                        className="border-emerald-500/20 text-emerald-400 bg-emerald-500/10"
+                      >
+                        {seeker.profile.experience}
+                      </Badge>
                     )}
                   </div>
 
-                  {/* Bio */}
-                  {profile.profile?.bio && (
-                    <div className="mb-4">
-                      <p className="text-gray-300 text-sm line-clamp-3">
-                        {profile.profile.bio}
-                      </p>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    {seeker.profile?.firstName && seeker.profile?.lastName
+                      ? `${seeker.profile.firstName} ${seeker.profile.lastName}`
+                      : 'Job Seeker'
+                    }
+                  </h3>
+
+                  {seeker.profile?.location && (
+                    <div className="flex items-center text-gray-400 text-sm mb-3">
+                      <MapPin className="h-4 w-4 mr-1" />
+                      {seeker.profile.location}
                     </div>
                   )}
 
-                  {/* Skills */}
-                  {profile.profile?.skills && profile.profile.skills.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-400 mb-2">Skills</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {profile.profile.skills.slice(0, 4).map((skill: string, index: number) => (
-                          <Badge key={index} variant="outline" className="text-xs border-gray-600 text-gray-300">
-                            {skill}
-                          </Badge>
-                        ))}
-                        {profile.profile.skills.length > 4 && (
-                          <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
-                            +{profile.profile.skills.length - 4}
-                          </Badge>
-                        )}
-                      </div>
+                  {seeker.profile?.bio && (
+                    <p className="text-gray-300 text-sm line-clamp-3 mb-4">
+                      {seeker.profile.bio}
+                    </p>
+                  )}
+
+                  {seeker.profile?.skills && seeker.profile.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {seeker.profile.skills.slice(0, 4).map((skill: string, index: number) => (
+                        <Badge key={index} variant="outline" className="text-xs border-gray-600 text-gray-300">
+                          {skill}
+                        </Badge>
+                      ))}
+                      {seeker.profile.skills.length > 4 && (
+                        <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
+                          +{seeker.profile.skills.length - 4}
+                        </Badge>
+                      )}
                     </div>
                   )}
 
-                  {/* Contact Info */}
+                  {/* Contact and Links Section */}
                   <div className="space-y-2 mb-4">
-                    {profile.email && (
+                    {seeker.email && (
                       <div className="flex items-center text-gray-400 text-sm">
-                        <Mail className="h-3 w-3 mr-2" />
-                        {profile.email}
+                        <Mail className="h-4 w-4 mr-2" />
+                        <span className="truncate">{seeker.email}</span>
                       </div>
                     )}
-                    {profile.profile?.phoneNumber && (
+                    
+                    {seeker.profile?.phoneNumber && (
                       <div className="flex items-center text-gray-400 text-sm">
-                        <Phone className="h-3 w-3 mr-2" />
-                        {profile.profile.phoneNumber}
+                        <Phone className="h-4 w-4 mr-2" />
+                        {seeker.profile.phoneNumber}
                       </div>
                     )}
+
+                    {/* Professional Links */}
+                    <div className="flex space-x-2 mt-2">
+                      {seeker.profile?.links?.linkedin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-gray-600 p-1"
+                          onClick={() => window.open(seeker.profile.links.linkedin, '_blank')}
+                        >
+                          <Linkedin className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {seeker.profile?.links?.github && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-gray-600 p-1"
+                          onClick={() => window.open(seeker.profile.links.github, '_blank')}
+                        >
+                          <Github className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {seeker.profile?.links?.portfolio && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-gray-600 p-1"
+                          onClick={() => window.open(seeker.profile.links.portfolio, '_blank')}
+                        >
+                          <Globe className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 mt-4">
                     <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="flex-1 border-gray-700"
+                      className="flex-1 bg-gradient-to-r from-emerald-500 to-blue-500 text-sm"
+                      onClick={() => handleContactSeeker(seeker)}
                     >
-                      View Full Profile
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      className="flex-1 bg-gradient-to-r from-emerald-500 to-blue-500"
-                    >
+                      <Mail className="h-4 w-4 mr-1" />
                       Contact
                     </Button>
+                    
+                    {seeker.profile?.resumeUrl && (
+                      <Button 
+                        variant="outline"
+                        className="border-gray-700"
+                        onClick={() => handleViewResume(seeker.profile.resumeUrl)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -202,12 +296,12 @@ const JobSeekerProfiles = () => {
             <div className="col-span-full text-center py-12">
               <User className="h-16 w-16 text-gray-600 mx-auto mb-4" />
               <div className="text-gray-400 text-lg mb-2">
-                {profiles.length ===0 ? 'No job seekers registered yet' : 'No profiles match your search'}
+                {jobSeekers.length === 0 ? 'No job seekers found' : 'No job seekers match your search'}
               </div>
               <p className="text-gray-500">
-                {profiles.length === 0 
-                  ? 'Check back later for new candidates'
-                  : 'Try adjusting your search terms'
+                {jobSeekers.length === 0 
+                  ? 'Check back later for new profiles'
+                  : 'Try adjusting your search criteria'
                 }
               </p>
             </div>

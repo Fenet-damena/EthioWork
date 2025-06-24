@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +8,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, Upload, Link, MapPin, Briefcase, Plus, X } from 'lucide-react';
 
-const ProfileManagement = () => {
+interface ProfileManagementProps {
+  initialProfile?: any;
+  onSave: (profileData: any, profileImage?: File, resume?: File) => Promise<void>;
+  saving?: boolean;
+}
+
+const ProfileManagement: React.FC<ProfileManagementProps> = ({ 
+  initialProfile, 
+  onSave, 
+  saving = false 
+}) => {
   const [profile, setProfile] = useState({
     firstName: '',
     lastName: '',
@@ -24,12 +33,42 @@ const ProfileManagement = () => {
       linkedin: '',
       github: '',
       portfolio: ''
-    }
+    },
+    profileImageUrl: '',
+    resumeUrl: ''
   });
   
   const [newSkill, setNewSkill] = useState('');
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [resume, setResume] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string>('');
+
+  useEffect(() => {
+    if (initialProfile) {
+      setProfile({
+        firstName: initialProfile.firstName || '',
+        lastName: initialProfile.lastName || '',
+        email: initialProfile.email || '',
+        phoneNumber: initialProfile.phoneNumber || '',
+        location: initialProfile.location || '',
+        bio: initialProfile.bio || '',
+        skills: initialProfile.skills || [],
+        experience: initialProfile.experience || '',
+        education: initialProfile.education || '',
+        links: initialProfile.links || {
+          linkedin: '',
+          github: '',
+          portfolio: ''
+        },
+        profileImageUrl: initialProfile.profileImageUrl || '',
+        resumeUrl: initialProfile.resumeUrl || ''
+      });
+      
+      if (initialProfile.profileImageUrl) {
+        setProfileImagePreview(initialProfile.profileImageUrl);
+      }
+    }
+  }, [initialProfile]);
 
   const handleInputChange = (field: string, value: string) => {
     setProfile(prev => ({
@@ -65,24 +104,32 @@ const ProfileManagement = () => {
     }));
   };
 
-  const handleFileUpload = (file: File, type: 'image' | 'resume') => {
-    if (type === 'image') {
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
       setProfileImage(file);
-    } else {
-      setResume(file);
+      const previewUrl = URL.createObjectURL(file);
+      setProfileImagePreview(previewUrl);
+      console.log('Profile image selected:', file.name);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleResumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setResume(file);
+      console.log('Resume selected:', file.name);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Profile data:', profile);
-    console.log('Profile image:', profileImage);
-    console.log('Resume:', resume);
-    // TODO: Implement profile update logic
+    console.log('Submitting profile:', profile);
+    await onSave(profile, profileImage || undefined, resume || undefined);
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
       <Card className="bg-gray-900/50 border-gray-800">
         <CardHeader>
           <CardTitle className="text-white flex items-center">
@@ -92,12 +139,12 @@ const ProfileManagement = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-6 mb-6">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-emerald-500 to-blue-500 flex items-center justify-center">
-              {profileImage ? (
+            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-emerald-500 to-blue-500 flex items-center justify-center overflow-hidden">
+              {profileImagePreview ? (
                 <img 
-                  src={URL.createObjectURL(profileImage)} 
+                  src={profileImagePreview} 
                   alt="Profile" 
-                  className="w-full h-full rounded-full object-cover"
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 <User className="h-12 w-12 text-white" />
@@ -105,7 +152,7 @@ const ProfileManagement = () => {
             </div>
             <div>
               <Label htmlFor="profile-image" className="cursor-pointer">
-                <Button variant="outline" className="border-gray-700">
+                <Button type="button" variant="outline" className="border-gray-700">
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Photo
                 </Button>
@@ -115,7 +162,7 @@ const ProfileManagement = () => {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'image')}
+                onChange={handleProfileImageChange}
               />
               <p className="text-gray-400 text-sm mt-1">JPG, PNG or GIF (max 5MB)</p>
             </div>
@@ -207,6 +254,7 @@ const ProfileManagement = () => {
                 <Badge key={index} variant="secondary" className="bg-emerald-500/20 text-emerald-400">
                   {skill}
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => removeSkill(skill)}
@@ -223,9 +271,9 @@ const ProfileManagement = () => {
                 onChange={(e) => setNewSkill(e.target.value)}
                 placeholder="Add a skill"
                 className="bg-gray-800 border-gray-700 text-white"
-                onKeyPress={(e) => e.key === 'Enter' && addSkill()}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
               />
-              <Button onClick={addSkill} variant="outline" className="border-gray-700">
+              <Button type="button" onClick={addSkill} variant="outline" className="border-gray-700">
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -317,6 +365,7 @@ const ProfileManagement = () => {
                 <div className="text-emerald-400">{resume.name}</div>
                 <div className="text-gray-400 text-sm">{(resume.size / 1024 / 1024).toFixed(2)} MB</div>
                 <Button 
+                  type="button"
                   variant="outline" 
                   onClick={() => setResume(null)}
                   className="border-gray-700"
@@ -324,41 +373,63 @@ const ProfileManagement = () => {
                   Remove
                 </Button>
               </div>
+            ) : profile.resumeUrl ? (
+              <div className="space-y-2">
+                <div className="text-emerald-400">Current Resume</div>
+                <div className="text-gray-400 text-sm">
+                  <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    View Current Resume
+                  </a>
+                </div>
+                <Label htmlFor="resume-upload" className="cursor-pointer">
+                  <Button type="button" variant="outline" className="border-gray-700">
+                    Upload New Resume
+                  </Button>
+                </Label>
+              </div>
             ) : (
               <div className="space-y-2">
                 <Upload className="h-12 w-12 text-gray-400 mx-auto" />
                 <div className="text-gray-300">Drop your resume here or click to browse</div>
                 <div className="text-gray-400 text-sm">PDF, DOC, DOCX (max 5MB)</div>
                 <Label htmlFor="resume-upload" className="cursor-pointer">
-                  <Button variant="outline" className="border-gray-700">
+                  <Button type="button" variant="outline" className="border-gray-700">
                     Choose File
                   </Button>
                 </Label>
-                <input
-                  id="resume-upload"
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'resume')}
-                />
               </div>
             )}
+            <input
+              id="resume-upload"
+              type="file"
+              accept=".pdf,.doc,.docx"
+              className="hidden"
+              onChange={handleResumeChange}
+            />
           </div>
         </CardContent>
       </Card>
 
       <div className="flex justify-end space-x-4">
-        <Button variant="outline" className="border-gray-700">
+        <Button type="button" variant="outline" className="border-gray-700">
           Cancel
         </Button>
         <Button 
-          onClick={handleSubmit}
+          type="submit"
+          disabled={saving}
           className="bg-gradient-to-r from-emerald-500 to-blue-500"
         >
-          Save Profile
+          {saving ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Saving...
+            </>
+          ) : (
+            'Save Profile'
+          )}
         </Button>
       </div>
-    </div>
+    </form>
   );
 };
 

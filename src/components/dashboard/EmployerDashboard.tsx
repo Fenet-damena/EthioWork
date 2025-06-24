@@ -1,129 +1,108 @@
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useNavigate } from 'react-router-dom';
 import { 
-  Plus, 
   Briefcase, 
+  Plus, 
   Users, 
-  Eye, 
-  Edit, 
+  TrendingUp, 
+  Eye,
+  Edit,
   Trash2,
-  Building2,
-  MapPin,
-  Clock,
-  DollarSign,
-  UserSearch,
-  RefreshCw
+  UserSearch
 } from 'lucide-react';
-import { useEmployerJobs } from '@/hooks/useJobs';
-import { useUserProfile } from '@/hooks/useAuth';
 import { useAuth } from '@/contexts/AuthContext';
+import { getJobsByEmployer, deleteJob } from '@/services/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 const EmployerDashboard = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { profile } = useUserProfile(currentUser?.uid || null);
-  const { jobs, loading } = useEmployerJobs();
+  const { toast } = useToast();
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  console.log('Employer Dashboard - Current user:', currentUser?.uid);
-  console.log('Employer Dashboard - Jobs:', jobs);
+  const fetchJobs = async () => {
+    if (!currentUser) return;
+    
+    try {
+      console.log('Fetching jobs for employer:', currentUser.uid);
+      const employerJobs = await getJobsByEmployer(currentUser.uid);
+      console.log('Employer jobs fetched:', employerJobs);
+      setJobs(employerJobs);
+    } catch (error) {
+      console.error('Error fetching employer jobs:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load your job postings.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Force refresh when component mounts
   useEffect(() => {
-    console.log('EmployerDashboard mounted, jobs:', jobs.length);
-  }, [jobs]);
+    fetchJobs();
+  }, [currentUser, refreshKey]);
 
-  const totalApplications = React.useMemo(() => {
-    return jobs.reduce((total: number, job: any) => total + (job.applicationsCount || 0), 0);
-  }, [jobs]);
-
-  const activeJobs = jobs.filter((job: any) => job.status === 'active');
-  const recentJobs = jobs.slice(0, 5);
-
-  const handleViewApplicants = (jobId: string) => {
-    console.log('Viewing applications for job:', jobId);
-    navigate(`/applications/${jobId}`);
+  const handleDeleteJob = async (jobId: string) => {
+    if (!confirm('Are you sure you want to delete this job posting?')) return;
+    
+    try {
+      await deleteJob(jobId);
+      toast({
+        title: "Success",
+        description: "Job posting deleted successfully.",
+      });
+      // Refresh the jobs list
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error('Error deleting job:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete job posting.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleEditJob = (jobId: string) => {
-    // TODO: Implement edit job functionality
-    console.log('Edit job:', jobId);
+  const handleRefresh = () => {
+    setLoading(true);
+    setRefreshKey(prev => prev + 1);
   };
 
-  const refreshJobs = () => {
-    window.location.reload();
+  const stats = {
+    totalJobs: jobs.length,
+    activeJobs: jobs.filter((job: any) => job.status === 'active').length,
+    totalApplications: jobs.reduce((acc: number, job: any) => acc + (job.applicationsCount || 0), 0)
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
-          <div className="text-white text-lg">Loading dashboard...</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-black text-white">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">
-              Welcome back, {profile?.profile?.companyName || 'Employer'}!
-            </h1>
-            <p className="text-gray-400 mt-1">Manage your job postings and find great candidates</p>
-          </div>
-          <div className="flex space-x-3">
-            <Button 
-              onClick={refreshJobs}
-              variant="outline"
-              className="border-gray-700"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-            <Button 
-              onClick={() => navigate('/post-job')}
-              className="bg-gradient-to-r from-emerald-500 to-blue-500"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Post New Job
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate('/job-seekers')}
-              className="border-gray-700"
-            >
-              <UserSearch className="h-4 w-4 mr-2" />
-              Find Candidates
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate('/profile')}
-              className="border-gray-700"
-            >
-              <Building2 className="h-4 w-4 mr-2" />
-              Company Profile
-            </Button>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent mb-2">
+            Employer Dashboard
+          </h1>
+          <p className="text-gray-400 text-lg">Manage your job postings and find talent</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-gray-900/50 border-gray-800">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-400 text-sm">Total Jobs</p>
-                  <p className="text-2xl font-bold text-white">{jobs.length}</p>
+                  <p className="text-3xl font-bold text-white">{stats.totalJobs}</p>
                 </div>
-                <Briefcase className="h-8 w-8 text-emerald-400" />
+                <Briefcase className="h-12 w-12 text-emerald-400" />
               </div>
             </CardContent>
           </Card>
@@ -133,9 +112,9 @@ const EmployerDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-400 text-sm">Active Jobs</p>
-                  <p className="text-2xl font-bold text-green-400">{activeJobs.length}</p>
+                  <p className="text-3xl font-bold text-white">{stats.activeJobs}</p>
                 </div>
-                <Eye className="h-8 w-8 text-green-400" />
+                <TrendingUp className="h-12 w-12 text-blue-400" />
               </div>
             </CardContent>
           </Card>
@@ -144,167 +123,135 @@ const EmployerDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Total Applicants</p>
-                  <p className="text-2xl font-bold text-blue-400">{totalApplications}</p>
+                  <p className="text-gray-400 text-sm">Total Applications</p>
+                  <p className="text-3xl font-bold text-white">{stats.totalApplications}</p>
                 </div>
-                <Users className="h-8 w-8 text-blue-400" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-900/50 border-gray-800">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">This Month</p>
-                  <p className="text-2xl font-bold text-purple-400">
-                    {jobs.filter((job: any) => {
-                      const jobDate = new Date(job.createdAt?.toDate?.() || job.createdAt);
-                      const now = new Date();
-                      return jobDate.getMonth() === now.getMonth() && jobDate.getFullYear() === now.getFullYear();
-                    }).length}
-                  </p>
-                </div>
-                <Plus className="h-8 w-8 text-purple-400" />
+                <Users className="h-12 w-12 text-purple-400" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <Card className="bg-gray-900/50 border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-white">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button 
-                onClick={() => navigate('/post-job')}
-                variant="outline" 
-                className="border-gray-700 justify-start h-auto p-4"
-              >
-                <div className="text-left">
-                  <div className="flex items-center mb-2">
-                    <Plus className="h-5 w-5 mr-2 text-emerald-400" />
-                    <span className="font-medium">Post New Job</span>
-                  </div>
-                  <p className="text-sm text-gray-400">Create a new job listing to attract candidates</p>
-                </div>
-              </Button>
-              
-              <Button 
-                onClick={() => navigate('/job-seekers')}
-                variant="outline" 
-                className="border-gray-700 justify-start h-auto p-4"
-              >
-                <div className="text-left">
-                  <div className="flex items-center mb-2">
-                    <UserSearch className="h-5 w-5 mr-2 text-blue-400" />
-                    <span className="font-medium">Browse Candidates</span>
-                  </div>
-                  <p className="text-sm text-gray-400">View job seeker profiles and find talent</p>
-                </div>
-              </Button>
-              
-              <Button 
-                onClick={() => navigate('/profile')}
-                variant="outline" 
-                className="border-gray-700 justify-start h-auto p-4"
-              >
-                <div className="text-left">
-                  <div className="flex items-center mb-2">
-                    <Building2 className="h-5 w-5 mr-2 text-purple-400" />
-                    <span className="font-medium">Update Company Profile</span>
-                  </div>
-                  <p className="text-sm text-gray-400">Manage your company information</p>
-                </div>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-4 mb-8">
+          <Button 
+            onClick={() => navigate('/post-job')}
+            className="bg-gradient-to-r from-emerald-500 to-blue-500"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Post New Job
+          </Button>
+          
+          <Button 
+            onClick={() => navigate('/job-seekers')}
+            variant="outline"
+            className="border-gray-700"
+          >
+            <UserSearch className="h-4 w-4 mr-2" />
+            Browse Job Seekers
+          </Button>
+          
+          <Button 
+            onClick={handleRefresh}
+            variant="outline"
+            className="border-gray-700"
+            disabled={loading}
+          >
+            {loading ? 'Refreshing...' : 'Refresh Jobs'}
+          </Button>
+        </div>
 
-        {/* Recent Job Postings */}
+        {/* Job Listings */}
         <Card className="bg-gray-900/50 border-gray-800">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-white flex items-center">
-                <Briefcase className="h-5 w-5 mr-2 text-emerald-400" />
-                Your Job Postings
-              </CardTitle>
-              <p className="text-gray-400 text-sm">Total: {jobs.length} jobs</p>
-            </div>
+            <CardTitle className="text-white">Your Job Postings</CardTitle>
           </CardHeader>
           <CardContent>
-            {recentJobs.length > 0 ? (
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-400 mx-auto mb-4"></div>
+                <div className="text-gray-400">Loading your jobs...</div>
+              </div>
+            ) : jobs.length > 0 ? (
               <div className="space-y-4">
-                {recentJobs.map((job: any) => (
-                  <div key={job.id} className="flex items-center justify-between p-4 border border-gray-800 rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-lg flex items-center justify-center">
-                        <Briefcase className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-white">{job.title}</h4>
-                        <div className="flex items-center space-x-4 text-sm text-gray-400 mt-1">
-                          <div className="flex items-center">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {job.location}
-                          </div>
-                          <div className="flex items-center">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {new Date(job.createdAt?.toDate?.() || job.createdAt).toLocaleDateString()}
-                          </div>
-                          <div className="flex items-center">
-                            <Users className="h-3 w-3 mr-1" />
-                            {job.applicationsCount || 0} applications
-                          </div>
+                {jobs.map((job: any) => (
+                  <div 
+                    key={job.id} 
+                    className="bg-gray-800/50 rounded-lg p-6 border border-gray-700 hover:border-gray-600 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-white mb-2">{job.title}</h3>
+                        <p className="text-gray-300 mb-2">{job.company}</p>
+                        <div className="flex items-center space-x-4 text-sm text-gray-400">
+                          <span>{job.location}</span>
+                          <span>•</span>
+                          <span>{job.type}</span>
+                          <span>•</span>
+                          <span>{job.applicationsCount || 0} applications</span>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
                       <Badge 
                         variant={job.status === 'active' ? 'default' : 'secondary'}
-                        className={
-                          job.status === 'active' 
-                            ? 'bg-green-500/20 text-green-400' 
-                            : 'bg-gray-500/20 text-gray-400'
+                        className={job.status === 'active' 
+                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' 
+                          : 'bg-gray-500/20 text-gray-400 border-gray-500/20'
                         }
                       >
                         {job.status}
                       </Badge>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-gray-700"
-                        onClick={() => handleViewApplicants(job.id)}
-                      >
-                        <Users className="h-4 w-4 mr-1" />
-                        View Applications ({job.applicationsCount || 0})
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-gray-700"
-                        onClick={() => handleEditJob(job.id)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                    </div>
+
+                    {job.description && (
+                      <p className="text-gray-300 text-sm mb-4 line-clamp-2">
+                        {job.description}
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-400">
+                        Posted: {new Date(job.createdAt?.toDate?.() || job.createdAt).toLocaleDateString()}
+                      </div>
+                      
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/jobs/${job.id}`)}
+                          className="border-gray-600"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/applications/${job.id}`)}
+                          className="border-gray-600"
+                        >
+                          <Users className="h-4 w-4 mr-1" />
+                          Applications ({job.applicationsCount || 0})
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteJob(job.id)}
+                          className="border-red-600 text-red-400 hover:bg-red-600/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
-                
-                {jobs.length > 5 && (
-                  <div className="text-center pt-4">
-                    <Button variant="outline" className="border-gray-700">
-                      View All Jobs ({jobs.length})
-                    </Button>
-                  </div>
-                )}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <Briefcase className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 mb-4">No job postings yet</p>
+              <div className="text-center py-12">
+                <Briefcase className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+                <div className="text-gray-400 text-lg mb-2">No job postings yet</div>
+                <p className="text-gray-500 mb-4">Create your first job posting to start finding candidates</p>
                 <Button 
                   onClick={() => navigate('/post-job')}
                   className="bg-gradient-to-r from-emerald-500 to-blue-500"

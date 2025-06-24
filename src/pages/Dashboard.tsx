@@ -2,7 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile, useAuthActions } from '@/hooks/useAuth';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +15,7 @@ const Dashboard = () => {
   const { profile, loading: profileLoading } = useUserProfile(currentUser?.uid || null);
   const { logout, loading: logoutLoading } = useAuthActions();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Show loading for maximum 15 seconds
   const [showFallback, setShowFallback] = React.useState(false);
@@ -34,6 +35,8 @@ const Dashboard = () => {
         title: "Logged Out",
         description: "You have been successfully logged out.",
       });
+      // Redirect to home page after logout
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "Logout Failed",
