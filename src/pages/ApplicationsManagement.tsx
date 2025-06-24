@@ -16,7 +16,8 @@ import {
   FileText,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Download
 } from 'lucide-react';
 import { getApplicationsByJob, updateApplicationStatus, getJobById, getUserProfile } from '@/services/firebase';
 
@@ -38,23 +39,36 @@ const ApplicationsManagement = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      console.log('Fetching applications for job:', jobId);
+      
       const [jobData, applicationsData] = await Promise.all([
         getJobById(jobId!),
         getApplicationsByJob(jobId!)
       ]);
 
+      console.log('Job data:', jobData);
+      console.log('Applications data:', applicationsData);
+      
       setJob(jobData);
 
       // Fetch applicant profiles
       const applicationsWithProfiles = await Promise.all(
         applicationsData.map(async (app: any) => {
-          const profile = await getUserProfile(app.applicantId);
-          return { ...app, applicantProfile: profile };
+          try {
+            const profile = await getUserProfile(app.applicantId);
+            console.log('Applicant profile for', app.applicantId, ':', profile);
+            return { ...app, applicantProfile: profile };
+          } catch (error) {
+            console.error('Error fetching profile for applicant:', app.applicantId, error);
+            return { ...app, applicantProfile: null };
+          }
         })
       );
 
+      console.log('Applications with profiles:', applicationsWithProfiles);
       setApplications(applicationsWithProfiles);
     } catch (error: any) {
+      console.error('Error fetching data:', error);
       toast({
         title: "Error loading applications",
         description: error.message,
@@ -67,6 +81,7 @@ const ApplicationsManagement = () => {
 
   const updateStatus = async (applicationId: string, status: string) => {
     try {
+      console.log('Updating application status:', applicationId, status);
       await updateApplicationStatus(applicationId, status);
       await fetchData(); // Refresh data
       
@@ -75,6 +90,7 @@ const ApplicationsManagement = () => {
         description: `Application has been ${status}.`
       });
     } catch (error: any) {
+      console.error('Error updating status:', error);
       toast({
         title: "Failed to update status",
         description: error.message,
@@ -87,6 +103,10 @@ const ApplicationsManagement = () => {
     return applications.filter(app => app.status === status);
   };
 
+  const contactApplicant = (email: string) => {
+    window.location.href = `mailto:${email}`;
+  };
+
   const ApplicationCard = ({ application }: { application: any }) => (
     <Card className="bg-gray-900/50 border-gray-800 mb-4">
       <CardContent className="p-6">
@@ -97,7 +117,7 @@ const ApplicationsManagement = () => {
             </div>
             <div>
               <h3 className="font-semibold text-white">
-                {application.applicantProfile?.profile?.firstName} {application.applicantProfile?.profile?.lastName}
+                {application.applicantProfile?.profile?.firstName || 'Unknown'} {application.applicantProfile?.profile?.lastName || 'User'}
               </h3>
               <p className="text-gray-400 text-sm">
                 Applied {new Date(application.appliedAt?.toDate?.() || application.appliedAt).toLocaleDateString()}
@@ -124,7 +144,7 @@ const ApplicationsManagement = () => {
           {application.applicantProfile?.email && (
             <div className="flex items-center text-gray-300">
               <Mail className="h-4 w-4 mr-2" />
-              {application.applicantProfile.email}
+              <span className="truncate">{application.applicantProfile.email}</span>
             </div>
           )}
           {application.applicantProfile?.profile?.phoneNumber && (
@@ -142,10 +162,19 @@ const ApplicationsManagement = () => {
           {application.applicantProfile?.profile?.experience && (
             <div className="flex items-center text-gray-300">
               <Calendar className="h-4 w-4 mr-2" />
-              {application.applicantProfile.profile.experience}
+              {application.applicantProfile.profile.experience} years experience
             </div>
           )}
         </div>
+
+        {application.applicantProfile?.profile?.bio && (
+          <div className="mb-4">
+            <p className="text-gray-400 text-sm mb-2">Bio:</p>
+            <p className="text-gray-300 text-sm bg-gray-800 p-3 rounded">
+              {application.applicantProfile.profile.bio}
+            </p>
+          </div>
+        )}
 
         {application.applicantProfile?.profile?.skills?.length > 0 && (
           <div className="mb-4">
@@ -169,8 +198,8 @@ const ApplicationsManagement = () => {
           </div>
         )}
 
-        {application.applicantProfile?.profile?.resumeUrl && (
-          <div className="mb-4">
+        <div className="flex flex-wrap gap-2 mb-4">
+          {application.applicantProfile?.profile?.resumeUrl && (
             <Button
               variant="outline"
               onClick={() => window.open(application.applicantProfile.profile.resumeUrl, '_blank')}
@@ -179,8 +208,19 @@ const ApplicationsManagement = () => {
               <FileText className="h-4 w-4 mr-2" />
               View Resume
             </Button>
-          </div>
-        )}
+          )}
+          
+          {application.applicantProfile?.email && (
+            <Button
+              variant="outline"
+              onClick={() => contactApplicant(application.applicantProfile.email)}
+              className="border-gray-700"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Contact
+            </Button>
+          )}
+        </div>
 
         <div className="flex space-x-2">
           {application.status === 'pending' && (
@@ -250,9 +290,10 @@ const ApplicationsManagement = () => {
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">
-            Applications for {job?.title}
+            Applications for {job?.title || 'Job'}
           </h1>
           <p className="text-gray-400 mt-2">{job?.company} • {job?.location}</p>
+          <p className="text-gray-500 text-sm mt-1">Total Applications: {applications.length}</p>
         </div>
 
         <Tabs defaultValue="pending" className="space-y-6">

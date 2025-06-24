@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,8 @@ import {
   MapPin,
   Clock,
   DollarSign,
-  UserSearch
+  UserSearch,
+  RefreshCw
 } from 'lucide-react';
 import { useEmployerJobs } from '@/hooks/useJobs';
 import { useUserProfile } from '@/hooks/useAuth';
@@ -30,6 +31,11 @@ const EmployerDashboard = () => {
   console.log('Employer Dashboard - Current user:', currentUser?.uid);
   console.log('Employer Dashboard - Jobs:', jobs);
 
+  // Force refresh when component mounts
+  useEffect(() => {
+    console.log('EmployerDashboard mounted, jobs:', jobs.length);
+  }, [jobs]);
+
   const totalApplications = React.useMemo(() => {
     return jobs.reduce((total: number, job: any) => total + (job.applicationsCount || 0), 0);
   }, [jobs]);
@@ -38,12 +44,17 @@ const EmployerDashboard = () => {
   const recentJobs = jobs.slice(0, 5);
 
   const handleViewApplicants = (jobId: string) => {
+    console.log('Viewing applications for job:', jobId);
     navigate(`/applications/${jobId}`);
   };
 
   const handleEditJob = (jobId: string) => {
     // TODO: Implement edit job functionality
     console.log('Edit job:', jobId);
+  };
+
+  const refreshJobs = () => {
+    window.location.reload();
   };
 
   if (loading) {
@@ -69,6 +80,14 @@ const EmployerDashboard = () => {
             <p className="text-gray-400 mt-1">Manage your job postings and find great candidates</p>
           </div>
           <div className="flex space-x-3">
+            <Button 
+              onClick={refreshJobs}
+              variant="outline"
+              className="border-gray-700"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
             <Button 
               onClick={() => navigate('/post-job')}
               className="bg-gradient-to-r from-emerald-500 to-blue-500"
@@ -207,10 +226,13 @@ const EmployerDashboard = () => {
         {/* Recent Job Postings */}
         <Card className="bg-gray-900/50 border-gray-800">
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Briefcase className="h-5 w-5 mr-2 text-emerald-400" />
-              Your Job Postings
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white flex items-center">
+                <Briefcase className="h-5 w-5 mr-2 text-emerald-400" />
+                Your Job Postings
+              </CardTitle>
+              <p className="text-gray-400 text-sm">Total: {jobs.length} jobs</p>
+            </div>
           </CardHeader>
           <CardContent>
             {recentJobs.length > 0 ? (
@@ -257,7 +279,7 @@ const EmployerDashboard = () => {
                         onClick={() => handleViewApplicants(job.id)}
                       >
                         <Users className="h-4 w-4 mr-1" />
-                        View Applications
+                        View Applications ({job.applicationsCount || 0})
                       </Button>
                       <Button
                         size="sm"
@@ -270,6 +292,14 @@ const EmployerDashboard = () => {
                     </div>
                   </div>
                 ))}
+                
+                {jobs.length > 5 && (
+                  <div className="text-center pt-4">
+                    <Button variant="outline" className="border-gray-700">
+                      View All Jobs ({jobs.length})
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-8">
