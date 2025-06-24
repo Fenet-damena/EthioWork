@@ -36,11 +36,12 @@ const EmployerDashboard = () => {
   const recentJobs = jobs.slice(0, 5);
 
   const handleViewApplicants = (jobId: string) => {
-    navigate(`/applicants/${jobId}`);
+    navigate(`/applications/${jobId}`);
   };
 
   const handleEditJob = (jobId: string) => {
-    navigate(`/edit-job/${jobId}`);
+    // TODO: Implement edit job functionality
+    console.log('Edit job:', jobId);
   };
 
   if (loading) {
