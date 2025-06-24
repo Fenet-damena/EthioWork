@@ -6,42 +6,62 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, MapPin, Briefcase, Clock, Building2, Filter, Bookmark, Heart, ArrowLeft } from 'lucide-react';
-import { useJobs } from '@/hooks/useJobs';
+import { 
+  ArrowLeft, 
+  Search, 
+  MapPin, 
+  Building2, 
+  Clock, 
+  DollarSign,
+  Briefcase,
+  Filter
+} from 'lucide-react';
+import { getAllJobs } from '@/services/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 
 const JobBrowsing = () => {
   const navigate = useNavigate();
-  const { jobs, loading } = useJobs();
+  const { currentUser } = useAuth();
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [location, setLocation] = useState('');
-  const [jobType, setJobType] = useState('');
-  const [workMode, setWorkMode] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [filteredJobs, setFilteredJobs] = useState([]);
 
   useEffect(() => {
-    let filtered = jobs.filter((job: any) => {
-      const matchesSearch = !searchTerm || 
-        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (job.description && job.description.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesLocation = !location || job.location.toLowerCase().includes(location.toLowerCase());
-      const matchesJobType = !jobType || jobType === 'all' || job.type === jobType;
-      const matchesWorkMode = !workMode || workMode === 'all' || job.workMode === workMode;
+    const fetchJobs = async () => {
+      try {
+        console.log('Fetching jobs for job browsing...');
+        const jobsData = await getAllJobs();
+        console.log('Jobs fetched:', jobsData);
+        setJobs(jobsData);
+        setFilteredJobs(jobsData);
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      return matchesSearch && matchesLocation && matchesJobType && matchesWorkMode;
+    fetchJobs();
+  }, []);
+
+  useEffect(() => {
+    let filtered = jobs.filter((job: any) => {
+      const matchesSearch = 
+        job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesLocation = !locationFilter || job.location?.toLowerCase().includes(locationFilter.toLowerCase());
+      const matchesType = !typeFilter || job.type === typeFilter;
+
+      return matchesSearch && matchesLocation && matchesType;
     });
 
     setFilteredJobs(filtered);
-  }, [jobs, searchTerm, location, jobType, workMode]);
-
-  const handleJobClick = (jobId: string) => {
-    navigate(`/job/${jobId}`);
-  };
-
-  const handleBackToDashboard = () => {
-    navigate('/dashboard');
-  };
+  }, [jobs, searchTerm, locationFilter, typeFilter]);
 
   if (loading) {
     return (
@@ -57,11 +77,11 @@ const JobBrowsing = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header with Back Button */}
+        {/* Header */}
         <div className="flex items-center mb-8">
           <Button
             variant="ghost"
-            onClick={handleBackToDashboard}
+            onClick={() => navigate('/dashboard')}
             className="mr-4 text-gray-400 hover:text-white"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -69,78 +89,56 @@ const JobBrowsing = () => {
           </Button>
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">
-              Browse Jobs in Ethiopia
+              Browse Jobs
             </h1>
-            <p className="text-gray-400 text-lg">Discover your next career opportunity</p>
+            <p className="text-gray-400 text-lg">Find your next opportunity</p>
           </div>
         </div>
 
         {/* Search and Filters */}
         <Card className="bg-gray-900/50 border-gray-800 mb-8">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <Input
-                  placeholder="Search jobs, skills, companies..."
+                  placeholder="Search jobs..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 bg-gray-800 border-gray-700 text-white"
                 />
               </div>
-              
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <Input
                   placeholder="Location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
                   className="pl-10 bg-gray-800 border-gray-700 text-white"
                 />
               </div>
-              
-              <Button className="bg-gradient-to-r from-emerald-500 to-blue-500">
-                <Search className="h-4 w-4 mr-2" />
-                Search Jobs
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Select value={jobType} onValueChange={setJobType}>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="bg-gray-800 border-gray-700">
                   <SelectValue placeholder="Job Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="">All Types</SelectItem>
                   <SelectItem value="full-time">Full-time</SelectItem>
                   <SelectItem value="part-time">Part-time</SelectItem>
                   <SelectItem value="contract">Contract</SelectItem>
                   <SelectItem value="internship">Internship</SelectItem>
                 </SelectContent>
               </Select>
-
-              <Select value={workMode} onValueChange={setWorkMode}>
-                <SelectTrigger className="bg-gray-800 border-gray-700">
-                  <SelectValue placeholder="Work Mode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Modes</SelectItem>
-                  <SelectItem value="remote">Remote</SelectItem>
-                  <SelectItem value="onsite">Onsite</SelectItem>
-                  <SelectItem value="hybrid">Hybrid</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button 
-                variant="outline" 
-                className="border-gray-700"
+              <Button
                 onClick={() => {
                   setSearchTerm('');
-                  setLocation('');
-                  setJobType('');
-                  setWorkMode('');
+                  setLocationFilter('');
+                  setTypeFilter('');
                 }}
+                variant="outline"
+                className="border-gray-700"
               >
+                <Filter className="h-4 w-4 mr-2" />
                 Clear Filters
               </Button>
             </div>
@@ -154,137 +152,100 @@ const JobBrowsing = () => {
           </div>
         </div>
 
-        {/* Job Listings */}
-        <div className="grid grid-cols-1 gap-6">
+        {/* Jobs Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredJobs.length > 0 ? (
             filteredJobs.map((job: any) => (
               <Card 
                 key={job.id} 
                 className="bg-gray-900/30 border-gray-800 hover:border-gray-700 transition-all cursor-pointer"
-                onClick={() => handleJobClick(job.id)}
+                onClick={() => navigate(`/jobs/${job.id}`)}
               >
                 <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-lg flex items-center justify-center">
-                        <Briefcase className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-white mb-2">{job.title}</h3>
-                        <div className="flex items-center space-x-4 text-gray-400 text-sm mb-2">
-                          <div className="flex items-center">
-                            <Building2 className="h-4 w-4 mr-1" />
-                            {job.company}
-                          </div>
-                          <div className="flex items-center">
-                            <MapPin className="h-4 w-4 mr-1" />
-                            {job.location}
-                          </div>
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
-                            {job.createdAt ? new Date(job.createdAt.toDate ? job.createdAt.toDate() : job.createdAt).toLocaleDateString() : 'Recently posted'}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2 mb-3">
-                          <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-400">
-                            {job.type || 'Full-time'}
-                          </Badge>
-                          <Badge variant="outline" className="border-blue-500/30 text-blue-400">
-                            {job.workMode || 'Onsite'}
-                          </Badge>
-                        </div>
-                      </div>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-lg flex items-center justify-center">
+                      <Briefcase className="h-6 w-6 text-white" />
                     </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-gray-400 hover:text-emerald-400"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Bookmark className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Badge 
+                      variant="outline" 
+                      className="border-emerald-500/20 text-emerald-400 bg-emerald-500/10"
+                    >
+                      {job.type}
+                    </Badge>
                   </div>
 
-                  <p className="text-gray-300 mb-4 line-clamp-2">
-                    {job.description ? job.description.substring(0, 150) + '...' : 'No description available'}
-                  </p>
+                  <h3 className="text-xl font-bold text-white mb-2 line-clamp-1">
+                    {job.title}
+                  </h3>
+
+                  <div className="flex items-center text-gray-400 text-sm mb-2">
+                    <Building2 className="h-4 w-4 mr-1" />
+                    {job.company}
+                  </div>
+
+                  <div className="flex items-center text-gray-400 text-sm mb-3">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    {job.location}
+                  </div>
+
+                  {job.description && (
+                    <p className="text-gray-300 text-sm line-clamp-2 mb-4">
+                      {job.description}
+                    </p>
+                  )}
 
                   {job.skills && job.skills.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {job.skills.slice(0, 5).map((skill: string, index: number) => (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {job.skills.slice(0, 3).map((skill: string, index: number) => (
                         <Badge key={index} variant="outline" className="text-xs border-gray-600 text-gray-300">
                           {skill}
                         </Badge>
                       ))}
-                      {job.skills.length > 5 && (
+                      {job.skills.length > 3 && (
                         <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
-                          +{job.skills.length - 5} more
+                          +{job.skills.length - 3}
                         </Badge>
                       )}
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center">
-                    <div className="text-lg font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">
-                      {job.salaryMin && job.salaryMax 
-                        ? `${job.salaryMin} - ${job.salaryMax} ${job.currency || 'ETB'}`
-                        : 'Competitive Salary'
-                      }
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="border-gray-700"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleJobClick(job.id);
-                        }}
-                      >
-                        View Details
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        className="bg-gradient-to-r from-emerald-500 to-blue-500"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleJobClick(job.id);
-                        }}
-                      >
-                        Apply Now
-                      </Button>
+                  <div className="flex items-center justify-between">
+                    {job.salaryMin && job.salaryMax && (
+                      <div className="flex items-center text-emerald-400 text-sm">
+                        <DollarSign className="h-4 w-4 mr-1" />
+                        {job.salaryMin} - {job.salaryMax} {job.currency || 'ETB'}
+                      </div>
+                    )}
+                    <div className="flex items-center text-gray-400 text-xs">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {new Date(job.createdAt?.toDate?.() || job.createdAt).toLocaleDateString()}
                     </div>
                   </div>
+
+                  <Button 
+                    className="w-full mt-4 bg-gradient-to-r from-emerald-500 to-blue-500"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/jobs/${job.id}`);
+                    }}
+                  >
+                    View Details
+                  </Button>
                 </CardContent>
               </Card>
             ))
           ) : (
-            <div className="text-center py-12">
+            <div className="col-span-full text-center py-12">
               <Briefcase className="h-16 w-16 text-gray-600 mx-auto mb-4" />
               <div className="text-gray-400 text-lg mb-2">
-                {jobs.length === 0 ? 'No jobs posted yet' : 'No jobs match your search criteria'}
+                {jobs.length === 0 ? 'No jobs available yet' : 'No jobs match your search'}
               </div>
-              <p className="text-gray-500 mb-4">
+              <p className="text-gray-500">
                 {jobs.length === 0 
-                  ? 'Be the first to post a job or check back later'
-                  : 'Try adjusting your search filters'
+                  ? 'Check back later for new opportunities'
+                  : 'Try adjusting your search criteria'
                 }
               </p>
-              <Button 
-                variant="outline" 
-                className="border-gray-700"
-                onClick={() => {
-                  setSearchTerm('');
-                  setLocation('');
-                  setJobType('');
-                  setWorkMode('');
-                }}
-              >
-                Clear All Filters
-              </Button>
             </div>
           )}
         </div>

@@ -1,3 +1,4 @@
+
 import { 
   collection, 
   doc, 
@@ -60,10 +61,7 @@ export const updateUserProfile = async (userId: string, data: any) => {
 export const getAllUsers = async () => {
   try {
     console.log('Fetching all users for admin');
-    const usersQuery = query(
-      collection(db, 'users'),
-      orderBy('createdAt', 'desc')
-    );
+    const usersQuery = query(collection(db, 'users'));
     const querySnapshot = await getDocs(usersQuery);
     const users = querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -144,8 +142,7 @@ export const getAllJobs = async () => {
     console.log('Fetching all active jobs');
     const jobsQuery = query(
       collection(db, 'jobs'), 
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc')
+      where('status', '==', 'active')
     );
     const querySnapshot = await getDocs(jobsQuery);
     const jobs = querySnapshot.docs.map(doc => ({
@@ -199,8 +196,7 @@ export const getJobsByEmployer = async (employerId: string) => {
     console.log('Fetching jobs for employer:', employerId);
     const jobsQuery = query(
       collection(db, 'jobs'), 
-      where('employerId', '==', employerId),
-      orderBy('createdAt', 'desc')
+      where('employerId', '==', employerId)
     );
     const querySnapshot = await getDocs(jobsQuery);
     const jobs = querySnapshot.docs.map(doc => ({
@@ -251,8 +247,7 @@ export const getApplicationsByJob = async (jobId: string) => {
   try {
     const applicationsQuery = query(
       collection(db, 'applications'),
-      where('jobId', '==', jobId),
-      orderBy('appliedAt', 'desc')
+      where('jobId', '==', jobId)
     );
     const querySnapshot = await getDocs(applicationsQuery);
     return querySnapshot.docs.map(doc => ({
@@ -269,8 +264,7 @@ export const getApplicationsByUser = async (userId: string) => {
   try {
     const applicationsQuery = query(
       collection(db, 'applications'),
-      where('applicantId', '==', userId),
-      orderBy('appliedAt', 'desc')
+      where('applicantId', '==', userId)
     );
     const querySnapshot = await getDocs(applicationsQuery);
     return querySnapshot.docs.map(doc => ({
@@ -298,9 +292,11 @@ export const updateApplicationStatus = async (applicationId: string, status: str
 // File Upload Operations
 export const uploadFile = async (file: File, path: string) => {
   try {
+    console.log('Uploading file:', file.name, 'to path:', path);
     const fileRef = ref(storage, path);
     const snapshot = await uploadBytes(fileRef, file);
     const downloadURL = await getDownloadURL(snapshot.ref);
+    console.log('File uploaded successfully:', downloadURL);
     return downloadURL;
   } catch (error) {
     console.error('Error uploading file:', error);

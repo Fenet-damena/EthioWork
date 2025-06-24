@@ -18,7 +18,6 @@ import {
   UserSearch
 } from 'lucide-react';
 import { useEmployerJobs } from '@/hooks/useJobs';
-import { useApplications } from '@/hooks/useApplications';
 import { useUserProfile } from '@/hooks/useAuth';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -27,6 +26,9 @@ const EmployerDashboard = () => {
   const { currentUser } = useAuth();
   const { profile } = useUserProfile(currentUser?.uid || null);
   const { jobs, loading } = useEmployerJobs();
+
+  console.log('Employer Dashboard - Current user:', currentUser?.uid);
+  console.log('Employer Dashboard - Jobs:', jobs);
 
   const totalApplications = React.useMemo(() => {
     return jobs.reduce((total: number, job: any) => total + (job.applicationsCount || 0), 0);
