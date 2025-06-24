@@ -24,6 +24,10 @@ const Index = () => {
     navigate('/auth');
   };
 
+  const handleBrowseJobs = () => {
+    navigate('/jobs');
+  };
+
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
       {/* Background Effects */}
@@ -88,7 +92,7 @@ const Index = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              onClick={() => navigate('/jobs')}
+              onClick={handleBrowseJobs}
               className="border-gray-700 text-white hover:bg-gray-800/50 text-lg px-8 py-4 h-auto"
             >
               Browse Jobs

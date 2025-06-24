@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
@@ -9,7 +9,10 @@ import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 type AuthMode = 'login' | 'register' | 'forgot-password';
 
 const Auth = () => {
-  const [mode, setMode] = useState<AuthMode>('login');
+  // Default to register if coming from "Get Started", otherwise login
+  const location = useLocation();
+  const defaultMode = location.state?.mode || 'register';
+  const [mode, setMode] = useState<AuthMode>(defaultMode);
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
