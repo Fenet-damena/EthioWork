@@ -67,15 +67,33 @@ const JobSeekerProfiles = () => {
   const handleContactSeeker = (seeker: any) => {
     if (seeker.email) {
       window.open(`mailto:${seeker.email}`, '_blank');
+    } else if (seeker.profile?.email) {
+      window.open(`mailto:${seeker.profile.email}`, '_blank');
+    }
+  };
+
+  const handleCallSeeker = (seeker: any) => {
+    const phone = seeker.profile?.phoneNumber;
+    if (phone) {
+      window.open(`tel:${phone}`, '_blank');
     }
   };
 
   const handleViewResume = (resumeUrl: string) => {
-    window.open(resumeUrl, '_blank');
+    if (resumeUrl) {
+      window.open(resumeUrl, '_blank');
+    }
   };
 
   const handleViewPortfolio = (portfolioUrl: string) => {
-    window.open(portfolioUrl, '_blank');
+    if (portfolioUrl) {
+      window.open(portfolioUrl, '_blank');
+    }
+  };
+
+  const onRatingSuccess = () => {
+    // Refresh the job seekers data to show updated ratings
+    fetchJobSeekers();
   };
 
   if (loading) {
@@ -96,9 +114,8 @@ const JobSeekerProfiles = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <Button
-              variant="ghost"
               onClick={() => navigate('/dashboard')}
-              className="mr-4 text-gray-300 hover:text-white hover:bg-gray-800 bg-gray-900/50 border border-gray-700"
+              className="mr-4 bg-gray-800 text-white hover:bg-gray-700 border border-gray-600"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
@@ -121,7 +138,7 @@ const JobSeekerProfiles = () => {
               placeholder="Search by name, skills, or location..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-gray-900/50 border-gray-700 text-white"
+              className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
             />
           </div>
         </div>
@@ -134,19 +151,19 @@ const JobSeekerProfiles = () => {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredJobSeekers.map((seeker) => (
-              <Card key={seeker.id} className="bg-gray-900/50 border-gray-800 hover:border-emerald-500/50 transition-colors">
+              <Card key={seeker.id} className="bg-gray-800 border-gray-600 hover:border-emerald-500/50 transition-colors">
                 <CardHeader className="text-center">
                   <div className="flex flex-col items-center space-y-3">
                     <Avatar className="h-16 w-16">
                       <AvatarImage src={seeker.profile?.profileImageUrl} />
                       <AvatarFallback className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white">
-                        {seeker.profile?.firstName?.[0]}{seeker.profile?.lastName?.[0]}
+                        {seeker.profile?.firstName?.[0] || 'U'}{seeker.profile?.lastName?.[0] || 'S'}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div>
                       <CardTitle className="text-white">
-                        {seeker.profile?.firstName} {seeker.profile?.lastName}
+                        {seeker.profile?.firstName || 'Unknown'} {seeker.profile?.lastName || 'User'}
                       </CardTitle>
                       {seeker.profile?.location && (
                         <p className="text-gray-400 flex items-center justify-center mt-1">
@@ -156,13 +173,33 @@ const JobSeekerProfiles = () => {
                       )}
                     </div>
 
-                    {/* Rating */}
-                    {seeker.profile?.rating && (
+                    {/* Rating Display */}
+                    {seeker.profile?.rating && seeker.profile.rating > 0 ? (
                       <div className="flex items-center space-x-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <div className="flex">
+                          {Array.from({ length: 5 }, (_, index) => (
+                            <Star
+                              key={index}
+                              className={`h-4 w-4 ${
+                                index < Math.round(seeker.profile.rating)
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-500'
+                              }`}
+                            />
+                          ))}
+                        </div>
                         <span className="text-sm text-gray-300">
                           {seeker.profile.rating.toFixed(1)} ({seeker.profile.ratingCount || 0})
                         </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-1">
+                        <div className="flex">
+                          {Array.from({ length: 5 }, (_, index) => (
+                            <Star key={index} className="h-4 w-4 text-gray-500" />
+                          ))}
+                        </div>
+                        <span className="text-sm text-gray-400">No ratings yet</span>
                       </div>
                     )}
                   </div>
@@ -182,12 +219,12 @@ const JobSeekerProfiles = () => {
                       <p className="text-gray-400 text-xs mb-2">Skills:</p>
                       <div className="flex flex-wrap gap-1">
                         {seeker.profile.skills.slice(0, 3).map((skill: string, index: number) => (
-                          <Badge key={index} variant="secondary" className="text-xs bg-gray-800 text-gray-300">
+                          <Badge key={index} variant="secondary" className="text-xs bg-emerald-900/50 text-emerald-300 border-emerald-600">
                             {skill}
                           </Badge>
                         ))}
                         {seeker.profile.skills.length > 3 && (
-                          <Badge variant="secondary" className="text-xs bg-gray-800 text-gray-300">
+                          <Badge variant="secondary" className="text-xs bg-gray-700 text-gray-300">
                             +{seeker.profile.skills.length - 3} more
                           </Badge>
                         )}
@@ -203,29 +240,46 @@ const JobSeekerProfiles = () => {
                     </div>
                   )}
 
-                  {/* Actions */}
+                  {/* Portfolio Items */}
+                  {seeker.profile?.portfolio && seeker.profile.portfolio.length > 0 && (
+                    <div>
+                      <p className="text-gray-400 text-xs mb-2">Portfolio:</p>
+                      <div className="space-y-1">
+                        {seeker.profile.portfolio.slice(0, 2).map((item: any, index: number) => (
+                          <div key={index} className="text-xs">
+                            <button
+                              onClick={() => handleViewPortfolio(item.url)}
+                              className="text-emerald-400 hover:text-emerald-300 underline"
+                            >
+                              {item.title}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quick Actions */}
                   <div className="flex flex-col space-y-2 pt-4">
                     <div className="flex space-x-2">
                       <Button
                         onClick={() => handleContactSeeker(seeker)}
-                        className="flex-1 bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white"
+                        className="flex-1 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white border-0"
                         size="sm"
                       >
                         <Mail className="h-3 w-3 mr-1" />
-                        Contact
+                        Email
                       </Button>
                       
-                      {currentUser && currentUser.uid !== seeker.id && (
-                        <RatingDialog
-                          jobSeekerId={seeker.id}
-                          jobSeekerName={`${seeker.profile?.firstName} ${seeker.profile?.lastName}`}
-                          trigger={
-                            <Button variant="outline" size="sm" className="border-gray-700 text-gray-300 hover:bg-gray-800">
-                              <Star className="h-3 w-3 mr-1" />
-                              Rate
-                            </Button>
-                          }
-                        />
+                      {seeker.profile?.phoneNumber && (
+                        <Button
+                          onClick={() => handleCallSeeker(seeker)}
+                          className="flex-1 bg-gray-700 hover:bg-gray-600 text-white border-0"
+                          size="sm"
+                        >
+                          <Phone className="h-3 w-3 mr-1" />
+                          Call
+                        </Button>
                       )}
                     </div>
 
@@ -233,27 +287,39 @@ const JobSeekerProfiles = () => {
                       {seeker.profile?.resumeUrl && (
                         <Button
                           onClick={() => handleViewResume(seeker.profile.resumeUrl)}
-                          variant="outline"
+                          className="flex-1 bg-gray-700 hover:bg-gray-600 text-white border-0"
                           size="sm"
-                          className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
                         >
                           <ExternalLink className="h-3 w-3 mr-1" />
                           Resume
                         </Button>
                       )}
                       
-                      {seeker.profile?.portfolioUrl && (
+                      {seeker.profile?.links?.portfolio && (
                         <Button
-                          onClick={() => handleViewPortfolio(seeker.profile.portfolioUrl)}
-                          variant="outline"
+                          onClick={() => handleViewPortfolio(seeker.profile.links.portfolio)}
+                          className="flex-1 bg-gray-700 hover:bg-gray-600 text-white border-0"
                           size="sm"
-                          className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
                         >
                           <ExternalLink className="h-3 w-3 mr-1" />
                           Portfolio
                         </Button>
                       )}
                     </div>
+
+                    {currentUser && currentUser.uid !== seeker.id && (
+                      <RatingDialog
+                        jobSeekerId={seeker.id}
+                        jobSeekerName={`${seeker.profile?.firstName || 'Unknown'} ${seeker.profile?.lastName || 'User'}`}
+                        onSuccess={onRatingSuccess}
+                        trigger={
+                          <Button className="w-full bg-yellow-600 hover:bg-yellow-700 text-white border-0" size="sm">
+                            <Star className="h-3 w-3 mr-1" />
+                            Rate This Job Seeker
+                          </Button>
+                        }
+                      />
+                    )}
                   </div>
                 </CardContent>
               </Card>

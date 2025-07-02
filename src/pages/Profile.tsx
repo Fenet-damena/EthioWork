@@ -17,7 +17,14 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
 
   const handleSaveProfile = async (profileData: any, profileImage?: File, resume?: File) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to update your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -29,10 +36,11 @@ const Profile = () => {
       if (profileImage) {
         console.log('Uploading profile image...');
         try {
-          const imageUrl = await uploadFile(
-            profileImage, 
-            `profiles/${currentUser.uid}/profile-image-${Date.now()}.${profileImage.name.split('.').pop()}`
-          );
+          const timestamp = Date.now();
+          const fileExtension = profileImage.name.split('.').pop() || 'jpg';
+          const imagePath = `profiles/${currentUser.uid}/profile-image-${timestamp}.${fileExtension}`;
+          
+          const imageUrl = await uploadFile(profileImage, imagePath);
           updatedProfile.profileImageUrl = imageUrl;
           console.log('Profile image uploaded:', imageUrl);
         } catch (uploadError) {
@@ -42,6 +50,7 @@ const Profile = () => {
             description: "Failed to upload profile image. Please try again.",
             variant: "destructive",
           });
+          setSaving(false);
           return;
         }
       }
@@ -50,10 +59,11 @@ const Profile = () => {
       if (resume) {
         console.log('Uploading resume...');
         try {
-          const resumeUrl = await uploadFile(
-            resume, 
-            `profiles/${currentUser.uid}/resume-${Date.now()}.${resume.name.split('.').pop()}`
-          );
+          const timestamp = Date.now();
+          const fileExtension = resume.name.split('.').pop() || 'pdf';
+          const resumePath = `profiles/${currentUser.uid}/resume-${timestamp}.${fileExtension}`;
+          
+          const resumeUrl = await uploadFile(resume, resumePath);
           updatedProfile.resumeUrl = resumeUrl;
           updatedProfile.resumeName = resume.name;
           console.log('Resume uploaded:', resumeUrl);
@@ -64,6 +74,7 @@ const Profile = () => {
             description: "Failed to upload resume. Please try again.",
             variant: "destructive",
           });
+          setSaving(false);
           return;
         }
       }
@@ -110,7 +121,7 @@ const Profile = () => {
         <div className="flex items-center mb-8">
           <Button
             onClick={() => navigate('/dashboard')}
-            className="mr-4 bg-white text-black hover:bg-gray-200"
+            className="mr-4 bg-gray-800 text-white hover:bg-gray-700 border border-gray-600"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard

@@ -1,5 +1,5 @@
 
-import { doc, updateDoc, getDoc, arrayUnion } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, arrayUnion, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export interface Rating {
@@ -16,15 +16,18 @@ export const rateJobSeeker = async (jobSeekerId: string, rating: Rating) => {
     console.log('Rating job seeker:', jobSeekerId, 'with rating:', rating);
     
     // Get current profile
-    const userDoc = await getDoc(doc(db, 'users', jobSeekerId));
+    const userRef = doc(db, 'users', jobSeekerId);
+    const userDoc = await getDoc(userRef);
+    
     if (!userDoc.exists()) {
       throw new Error('User not found');
     }
     
     const userData = userDoc.data();
-    const currentRatings = userData.profile?.ratings || [];
-    const currentRating = userData.profile?.rating || 0;
-    const currentCount = userData.profile?.ratingCount || 0;
+    const currentProfile = userData.profile || {};
+    const currentRatings = currentProfile.ratings || [];
+    const currentRating = currentProfile.rating || 0;
+    const currentCount = currentProfile.ratingCount || 0;
     
     // Check if user already rated
     const existingRating = currentRatings.find((r: Rating) => r.raterId === rating.raterId);
@@ -39,11 +42,16 @@ export const rateJobSeeker = async (jobSeekerId: string, rating: Rating) => {
     const totalRating = newRatings.reduce((sum, r) => sum + r.rating, 0);
     const newAverageRating = totalRating / newRatings.length;
     
-    // Update user profile
-    await updateDoc(doc(db, 'users', jobSeekerId), {
-      'profile.ratings': newRatings,
-      'profile.rating': newAverageRating,
-      'profile.ratingCount': newRatings.length,
+    // Update user profile with proper structure
+    const updatedProfile = {
+      ...currentProfile,
+      ratings: newRatings,
+      rating: newAverageRating,
+      ratingCount: newRatings.length
+    };
+    
+    await updateDoc(userRef, {
+      profile: updatedProfile,
       updatedAt: new Date()
     });
     

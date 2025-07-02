@@ -12,9 +12,10 @@ interface RatingDialogProps {
   jobSeekerId: string;
   jobSeekerName: string;
   trigger: React.ReactNode;
+  onSuccess?: () => void;
 }
 
-const RatingDialog: React.FC<RatingDialogProps> = ({ jobSeekerId, jobSeekerName, trigger }) => {
+const RatingDialog: React.FC<RatingDialogProps> = ({ jobSeekerId, jobSeekerName, trigger, onSuccess }) => {
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const [rating, setRating] = useState(0);
@@ -46,10 +47,16 @@ const RatingDialog: React.FC<RatingDialogProps> = ({ jobSeekerId, jobSeekerName,
       setOpen(false);
       setRating(0);
       setComment('');
+      
+      // Call the success callback to refresh data
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error: any) {
+      console.error('Rating error:', error);
       toast({
         title: "Rating Failed",
-        description: error.message || "Failed to submit rating.",
+        description: error.message || "Failed to submit rating. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -63,7 +70,7 @@ const RatingDialog: React.FC<RatingDialogProps> = ({ jobSeekerId, jobSeekerName,
         key={index}
         type="button"
         onClick={() => setRating(index + 1)}
-        className="focus:outline-none"
+        className="focus:outline-none transition-colors"
       >
         <Star
           className={`h-6 w-6 ${
@@ -79,9 +86,9 @@ const RatingDialog: React.FC<RatingDialogProps> = ({ jobSeekerId, jobSeekerName,
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="bg-gray-900 border-gray-800 text-white">
+      <DialogContent className="bg-gray-800 border-gray-600 text-white">
         <DialogHeader>
-          <DialogTitle>Rate {jobSeekerName}</DialogTitle>
+          <DialogTitle className="text-white">Rate {jobSeekerName}</DialogTitle>
           <DialogDescription className="text-gray-400">
             Share your experience working with this job seeker
           </DialogDescription>
@@ -90,11 +97,12 @@ const RatingDialog: React.FC<RatingDialogProps> = ({ jobSeekerId, jobSeekerName,
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Rating
+              Rating *
             </label>
             <div className="flex space-x-1">
               {renderStars()}
             </div>
+            <p className="text-xs text-gray-400 mt-1">Click on a star to rate</p>
           </div>
           
           <div>
@@ -104,8 +112,8 @@ const RatingDialog: React.FC<RatingDialogProps> = ({ jobSeekerId, jobSeekerName,
             <Textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your experience..."
-              className="bg-gray-800 border-gray-700 text-white"
+              placeholder="Share your experience working with this person..."
+              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
               rows={3}
             />
           </div>
@@ -114,14 +122,14 @@ const RatingDialog: React.FC<RatingDialogProps> = ({ jobSeekerId, jobSeekerName,
             <Button
               variant="outline"
               onClick={() => setOpen(false)}
-              className="border-gray-700 text-gray-300"
+              className="border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSubmitRating}
               disabled={rating === 0 || submitting}
-              className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white"
+              className="bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white border-0"
             >
               {submitting ? 'Submitting...' : 'Submit Rating'}
             </Button>
