@@ -9,14 +9,12 @@ import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 type AuthMode = 'login' | 'register' | 'forgot-password';
 
 const Auth = () => {
-  // Default to register if coming from "Get Started", otherwise login
   const location = useLocation();
-  const defaultMode = location.state?.mode || 'register';
+  const defaultMode = location.state?.mode || 'login';
   const [mode, setMode] = useState<AuthMode>(defaultMode);
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
-  // Redirect if already logged in
   React.useEffect(() => {
     if (currentUser) {
       console.log('User already authenticated, redirecting to dashboard');
@@ -26,7 +24,6 @@ const Auth = () => {
 
   const handleAuthSuccess = () => {
     console.log('Authentication successful, redirecting to dashboard');
-    // Small delay to ensure Firebase auth state is updated
     setTimeout(() => {
       navigate('/dashboard');
     }, 500);

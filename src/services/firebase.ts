@@ -1,4 +1,3 @@
-
 import { 
   collection, 
   doc, 
@@ -130,6 +129,11 @@ export const createJob = async (jobData: any) => {
     
     const jobRef = await addDoc(collection(db, 'jobs'), jobDoc);
     console.log('Job created with ID:', jobRef.id);
+    
+    // Import and call notification service
+    const { notifyJobSeekers } = await import('./notifications');
+    await notifyJobSeekers({ ...jobDoc, id: jobRef.id });
+    
     return jobRef.id;
   } catch (error) {
     console.error('Error creating job:', error);

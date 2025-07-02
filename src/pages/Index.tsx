@@ -9,7 +9,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
-  // Redirect to dashboard if already logged in
   React.useEffect(() => {
     if (currentUser) {
       navigate('/dashboard');
@@ -17,11 +16,11 @@ const Index = () => {
   }, [currentUser, navigate]);
 
   const handleGetStarted = () => {
-    navigate('/auth');
+    navigate('/auth', { state: { mode: 'register' } });
   };
 
   const handleSignIn = () => {
-    navigate('/auth');
+    navigate('/auth', { state: { mode: 'login' } });
   };
 
   const handleBrowseJobs = () => {
@@ -49,7 +48,7 @@ const Index = () => {
             <Button 
               variant="ghost" 
               onClick={handleSignIn}
-              className="text-gray-300 hover:text-white hover:bg-gray-800/50"
+              className="text-gray-300 hover:text-white hover:bg-gray-800/50 bg-gray-900/50 border border-gray-700"
             >
               Sign In
             </Button>
@@ -67,6 +66,13 @@ const Index = () => {
       {/* Hero Section */}
       <main className="relative z-10 px-6 py-20">
         <div className="max-w-6xl mx-auto text-center">
+          {/* Headline */}
+          <div className="mb-6">
+            <p className="text-emerald-400 font-semibold text-lg tracking-wide uppercase">
+              The Future of Ethiopian Employment
+            </p>
+          </div>
+          
           <h1 className="text-6xl font-bold mb-6 leading-tight">
             Find Your Dream Job in{' '}
             <span className="bg-gradient-to-r from-emerald-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -93,7 +99,7 @@ const Index = () => {
               size="lg" 
               variant="outline" 
               onClick={handleBrowseJobs}
-              className="border-gray-700 text-white hover:bg-gray-800/50 text-lg px-8 py-4 h-auto"
+              className="border-gray-700 text-white hover:bg-gray-800/50 bg-gray-900/50 text-lg px-8 py-4 h-auto"
             >
               Browse Jobs
               <Briefcase className="ml-2 h-5 w-5" />
