@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Upload, Link, MapPin, Briefcase, Plus, X } from 'lucide-react';
+import { User, Upload, Link, MapPin, Briefcase, Plus, X, Star } from 'lucide-react';
 
 interface ProfileManagementProps {
   initialProfile?: any;
@@ -29,16 +29,20 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
     skills: [] as string[],
     experience: '',
     education: '',
+    portfolio: [] as Array<{title: string, url: string, description: string}>,
     links: {
       linkedin: '',
       github: '',
       portfolio: ''
     },
     profileImageUrl: '',
-    resumeUrl: ''
+    resumeUrl: '',
+    rating: 0,
+    ratingCount: 0
   });
   
   const [newSkill, setNewSkill] = useState('');
+  const [newPortfolio, setNewPortfolio] = useState({title: '', url: '', description: ''});
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [resume, setResume] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string>('');
@@ -55,13 +59,16 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
         skills: initialProfile.skills || [],
         experience: initialProfile.experience || '',
         education: initialProfile.education || '',
+        portfolio: initialProfile.portfolio || [],
         links: initialProfile.links || {
           linkedin: '',
           github: '',
           portfolio: ''
         },
         profileImageUrl: initialProfile.profileImageUrl || '',
-        resumeUrl: initialProfile.resumeUrl || ''
+        resumeUrl: initialProfile.resumeUrl || '',
+        rating: initialProfile.rating || 0,
+        ratingCount: initialProfile.ratingCount || 0
       });
       
       if (initialProfile.profileImageUrl) {
@@ -104,21 +111,50 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
     }));
   };
 
+  const addPortfolio = () => {
+    if (newPortfolio.title.trim() && newPortfolio.url.trim()) {
+      setProfile(prev => ({
+        ...prev,
+        portfolio: [...prev.portfolio, { ...newPortfolio }]
+      }));
+      setNewPortfolio({title: '', url: '', description: ''});
+    }
+  };
+
+  const removePortfolio = (index: number) => {
+    setProfile(prev => ({
+      ...prev,
+      portfolio: prev.portfolio.filter((_, i) => i !== index)
+    }));
+  };
+
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+      
       setProfileImage(file);
       const previewUrl = URL.createObjectURL(file);
       setProfileImagePreview(previewUrl);
-      console.log('Profile image selected:', file.name);
+      console.log('Profile image selected:', file.name, 'Size:', file.size);
     }
   };
 
   const handleResumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+      
       setResume(file);
-      console.log('Resume selected:', file.name);
+      console.log('Resume selected:', file.name, 'Size:', file.size);
     }
   };
 
@@ -126,6 +162,17 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
     e.preventDefault();
     console.log('Submitting profile:', profile);
     await onSave(profile, profileImage || undefined, resume || undefined);
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, index) => (
+      <Star
+        key={index}
+        className={`h-5 w-5 ${
+          index < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'
+        }`}
+      />
+    ));
   };
 
   return (
@@ -152,7 +199,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
             </div>
             <div>
               <Label htmlFor="profile-image" className="cursor-pointer">
-                <Button type="button" variant="outline" className="border-gray-700">
+                <Button type="button" className="bg-emerald-600 hover:bg-emerald-700 text-white">
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Photo
                 </Button>
@@ -167,6 +214,18 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
               <p className="text-gray-400 text-sm mt-1">JPG, PNG or GIF (max 5MB)</p>
             </div>
           </div>
+
+          {/* Rating Display */}
+          {profile.rating > 0 && (
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="flex items-center">
+                {renderStars(Math.round(profile.rating))}
+              </div>
+              <span className="text-gray-300">
+                {profile.rating.toFixed(1)} ({profile.ratingCount} reviews)
+              </span>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -273,7 +332,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
                 className="bg-gray-800 border-gray-700 text-white"
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
               />
-              <Button type="button" onClick={addSkill} variant="outline" className="border-gray-700">
+              <Button type="button" onClick={addSkill} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -304,6 +363,63 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
               className="bg-gray-800 border-gray-700 text-white"
               placeholder="Your highest education level"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gray-900/50 border-gray-800">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center">
+            <Briefcase className="h-6 w-6 mr-2 text-emerald-400" />
+            Portfolio
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            {profile.portfolio.map((item, index) => (
+              <div key={index} className="bg-gray-800/50 p-4 rounded-lg flex justify-between items-start">
+                <div className="flex-1">
+                  <h4 className="text-white font-medium">{item.title}</h4>
+                  <p className="text-emerald-400 text-sm">{item.url}</p>
+                  <p className="text-gray-400 text-sm mt-1">{item.description}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removePortfolio(index)}
+                  className="text-red-400 hover:text-red-300"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <Input
+              value={newPortfolio.title}
+              onChange={(e) => setNewPortfolio(prev => ({...prev, title: e.target.value}))}
+              placeholder="Project title"
+              className="bg-gray-800 border-gray-700 text-white"
+            />
+            <Input
+              value={newPortfolio.url}
+              onChange={(e) => setNewPortfolio(prev => ({...prev, url: e.target.value}))}
+              placeholder="Project URL"
+              className="bg-gray-800 border-gray-700 text-white"
+            />
+            <div className="flex space-x-2">
+              <Input
+                value={newPortfolio.description}
+                onChange={(e) => setNewPortfolio(prev => ({...prev, description: e.target.value}))}
+                placeholder="Description"
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+              <Button type="button" onClick={addPortfolio} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -366,9 +482,8 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
                 <div className="text-gray-400 text-sm">{(resume.size / 1024 / 1024).toFixed(2)} MB</div>
                 <Button 
                   type="button"
-                  variant="outline" 
                   onClick={() => setResume(null)}
-                  className="border-gray-700"
+                  className="bg-gray-700 hover:bg-gray-600 text-white"
                 >
                   Remove
                 </Button>
@@ -382,7 +497,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
                   </a>
                 </div>
                 <Label htmlFor="resume-upload" className="cursor-pointer">
-                  <Button type="button" variant="outline" className="border-gray-700">
+                  <Button type="button" className="bg-emerald-600 hover:bg-emerald-700 text-white">
                     Upload New Resume
                   </Button>
                 </Label>
@@ -393,7 +508,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
                 <div className="text-gray-300">Drop your resume here or click to browse</div>
                 <div className="text-gray-400 text-sm">PDF, DOC, DOCX (max 5MB)</div>
                 <Label htmlFor="resume-upload" className="cursor-pointer">
-                  <Button type="button" variant="outline" className="border-gray-700">
+                  <Button type="button" className="bg-emerald-600 hover:bg-emerald-700 text-white">
                     Choose File
                   </Button>
                 </Label>
@@ -411,13 +526,13 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({
       </Card>
 
       <div className="flex justify-end space-x-4">
-        <Button type="button" variant="outline" className="border-gray-700">
+        <Button type="button" className="bg-gray-700 hover:bg-gray-600 text-white">
           Cancel
         </Button>
         <Button 
           type="submit"
           disabled={saving}
-          className="bg-gradient-to-r from-emerald-500 to-blue-500"
+          className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white"
         >
           {saving ? (
             <>

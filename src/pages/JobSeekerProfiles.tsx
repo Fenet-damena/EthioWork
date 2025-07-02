@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,10 +15,13 @@ import {
   Download,
   Github,
   Linkedin,
-  Globe
+  Globe,
+  Star,
+  Briefcase
 } from 'lucide-react';
 import { getAllUsers } from '@/services/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import RatingDialog from '@/components/rating/RatingDialog';
 
 const JobSeekerProfiles = () => {
   const navigate = useNavigate();
@@ -78,6 +80,17 @@ const JobSeekerProfiles = () => {
     }
   };
 
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, index) => (
+      <Star
+        key={index}
+        className={`h-4 w-4 ${
+          index < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'
+        }`}
+      />
+    ));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -97,7 +110,7 @@ const JobSeekerProfiles = () => {
           <Button
             variant="ghost"
             onClick={() => navigate('/dashboard')}
-            className="mr-4 text-gray-400 hover:text-white"
+            className="mr-4 text-gray-300 hover:text-white hover:bg-gray-800 bg-gray-900"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
@@ -137,8 +150,7 @@ const JobSeekerProfiles = () => {
                   setSearchTerm('');
                   setLocationFilter('');
                 }}
-                variant="outline"
-                className="border-gray-700"
+                className="bg-gray-700 hover:bg-gray-600 text-white"
               >
                 Clear Filters
               </Button>
@@ -191,6 +203,18 @@ const JobSeekerProfiles = () => {
                     }
                   </h3>
 
+                  {/* Rating Display */}
+                  {seeker.profile?.rating > 0 && (
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="flex items-center">
+                        {renderStars(Math.round(seeker.profile.rating))}
+                      </div>
+                      <span className="text-gray-400 text-sm">
+                        {seeker.profile.rating.toFixed(1)} ({seeker.profile.ratingCount || 0})
+                      </span>
+                    </div>
+                  )}
+
                   {seeker.profile?.location && (
                     <div className="flex items-center text-gray-400 text-sm mb-3">
                       <MapPin className="h-4 w-4 mr-1" />
@@ -219,6 +243,30 @@ const JobSeekerProfiles = () => {
                     </div>
                   )}
 
+                  {/* Portfolio Preview */}
+                  {seeker.profile?.portfolio && seeker.profile.portfolio.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex items-center text-gray-300 text-sm mb-2">
+                        <Briefcase className="h-4 w-4 mr-1" />
+                        Portfolio ({seeker.profile.portfolio.length} projects)
+                      </div>
+                      <div className="space-y-1">
+                        {seeker.profile.portfolio.slice(0, 2).map((project: any, index: number) => (
+                          <div key={index} className="text-xs text-gray-400">
+                            <a 
+                              href={project.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="hover:text-emerald-400 transition-colors"
+                            >
+                              {project.title}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Contact and Links Section */}
                   <div className="space-y-2 mb-4">
                     {seeker.email && (
@@ -240,8 +288,7 @@ const JobSeekerProfiles = () => {
                       {seeker.profile?.links?.linkedin && (
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="border-gray-600 p-1"
+                          className="bg-blue-600 hover:bg-blue-700 text-white p-1"
                           onClick={() => window.open(seeker.profile.links.linkedin, '_blank')}
                         >
                           <Linkedin className="h-3 w-3" />
@@ -250,8 +297,7 @@ const JobSeekerProfiles = () => {
                       {seeker.profile?.links?.github && (
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="border-gray-600 p-1"
+                          className="bg-gray-800 hover:bg-gray-700 text-white p-1"
                           onClick={() => window.open(seeker.profile.links.github, '_blank')}
                         >
                           <Github className="h-3 w-3" />
@@ -260,8 +306,7 @@ const JobSeekerProfiles = () => {
                       {seeker.profile?.links?.portfolio && (
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="border-gray-600 p-1"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white p-1"
                           onClick={() => window.open(seeker.profile.links.portfolio, '_blank')}
                         >
                           <Globe className="h-3 w-3" />
@@ -272,7 +317,7 @@ const JobSeekerProfiles = () => {
 
                   <div className="flex space-x-2 mt-4">
                     <Button 
-                      className="flex-1 bg-gradient-to-r from-emerald-500 to-blue-500 text-sm"
+                      className="flex-1 bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-sm"
                       onClick={() => handleContactSeeker(seeker)}
                     >
                       <Mail className="h-4 w-4 mr-1" />
@@ -281,13 +326,25 @@ const JobSeekerProfiles = () => {
                     
                     {seeker.profile?.resumeUrl && (
                       <Button 
-                        variant="outline"
-                        className="border-gray-700"
+                        className="bg-gray-700 hover:bg-gray-600 text-white"
                         onClick={() => handleViewResume(seeker.profile.resumeUrl)}
                       >
                         <Download className="h-4 w-4" />
                       </Button>
                     )}
+                    
+                    <RatingDialog
+                      jobSeekerId={seeker.id}
+                      jobSeekerName={seeker.profile?.firstName && seeker.profile?.lastName
+                        ? `${seeker.profile.firstName} ${seeker.profile.lastName}`
+                        : 'Job Seeker'
+                      }
+                      trigger={
+                        <Button className="bg-yellow-600 hover:bg-yellow-700 text-white">
+                          <Star className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
                   </div>
                 </CardContent>
               </Card>

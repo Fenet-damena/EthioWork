@@ -30,7 +30,7 @@ const Profile = () => {
         console.log('Uploading profile image...');
         const imageUrl = await uploadFile(
           profileImage, 
-          `profiles/${currentUser.uid}/profile-image-${Date.now()}`
+          `profiles/${currentUser.uid}/profile-image-${Date.now()}.${profileImage.name.split('.').pop()}`
         );
         updatedProfile.profileImageUrl = imageUrl;
         console.log('Profile image uploaded:', imageUrl);
@@ -41,7 +41,7 @@ const Profile = () => {
         console.log('Uploading resume...');
         const resumeUrl = await uploadFile(
           resume, 
-          `profiles/${currentUser.uid}/resume-${Date.now()}`
+          `profiles/${currentUser.uid}/resume-${Date.now()}.${resume.name.split('.').pop()}`
         );
         updatedProfile.resumeUrl = resumeUrl;
         console.log('Resume uploaded:', resumeUrl);
@@ -90,7 +90,7 @@ const Profile = () => {
           <Button
             variant="ghost"
             onClick={() => navigate('/dashboard')}
-            className="mr-4 text-gray-400 hover:text-white"
+            className="mr-4 text-gray-300 hover:text-white hover:bg-gray-800 bg-gray-900"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
