@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,13 +13,13 @@ import {
   Clock, 
   DollarSign, 
   Briefcase,
-  User,
-  Mail,
-  Phone
+  Heart,
+  HeartHandshake
 } from 'lucide-react';
 import { useJob } from '@/hooks/useJobs';
 import { useApplications } from '@/hooks/useApplications';
 import { useAuth } from '@/contexts/AuthContext';
+import { saveJob, unsaveJob, isJobSaved } from '@/services/savedJobs';
 
 const JobDetails = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -30,6 +30,49 @@ const JobDetails = () => {
   const { submitApplication } = useApplications();
   const [coverLetter, setCoverLetter] = useState('');
   const [applying, setApplying] = useState(false);
+  const [jobSaved, setJobSaved] = useState(false);
+  const [savingJob, setSavingJob] = useState(false);
+
+  useEffect(() => {
+    const checkIfJobSaved = async () => {
+      if (currentUser && jobId) {
+        const saved = await isJobSaved(currentUser.uid, jobId);
+        setJobSaved(saved);
+      }
+    };
+    checkIfJobSaved();
+  }, [currentUser, jobId]);
+
+  const handleSaveJob = async () => {
+    if (!currentUser || !jobId) return;
+
+    setSavingJob(true);
+    try {
+      if (jobSaved) {
+        await unsaveJob(currentUser.uid, jobId);
+        setJobSaved(false);
+        toast({
+          title: "Job Unsaved",
+          description: "Job removed from your saved jobs.",
+        });
+      } else {
+        await saveJob(currentUser.uid, jobId);
+        setJobSaved(true);
+        toast({
+          title: "Job Saved",
+          description: "Job added to your saved jobs.",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Save Failed",
+        description: error.message || "Failed to save job. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingJob(false);
+    }
+  };
 
   const handleApply = async () => {
     if (!currentUser || !job) return;
@@ -76,7 +119,7 @@ const JobDetails = () => {
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="text-white text-xl mb-4">Job not found</div>
-          <Button onClick={() => navigate('/jobs')} variant="outline" className="border-gray-700">
+          <Button onClick={() => navigate('/jobs')} className="bg-white text-black hover:bg-gray-200">
             Back to Jobs
           </Button>
         </div>
@@ -88,15 +131,38 @@ const JobDetails = () => {
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex items-center mb-8">
+        <div className="flex items-center justify-between mb-8">
           <Button
-            variant="ghost"
             onClick={() => navigate('/jobs')}
-            className="mr-4 text-gray-400 hover:text-white"
+            className="bg-white text-black hover:bg-gray-200"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Jobs
           </Button>
+
+          {currentUser && (
+            <Button
+              onClick={handleSaveJob}
+              disabled={savingJob}
+              className={`${
+                jobSaved 
+                  ? 'bg-red-500 hover:bg-red-600 text-white' 
+                  : 'bg-white text-black hover:bg-gray-200'
+              }`}
+            >
+              {jobSaved ? (
+                <>
+                  <HeartHandshake className="h-4 w-4 mr-2" />
+                  Saved
+                </>
+              ) : (
+                <>
+                  <Heart className="h-4 w-4 mr-2" />
+                  Save Job
+                </>
+              )}
+            </Button>
+          )}
         </div>
 
         {/* Job Details */}
@@ -195,7 +261,7 @@ const JobDetails = () => {
                 <Button
                   onClick={handleApply}
                   disabled={applying || !coverLetter.trim()}
-                  className="bg-gradient-to-r from-emerald-500 to-blue-500 w-full"
+                  className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white w-full hover:from-emerald-600 hover:to-blue-600"
                 >
                   {applying ? 'Submitting...' : 'Submit Application'}
                 </Button>
@@ -210,7 +276,7 @@ const JobDetails = () => {
               <p className="text-gray-400 mb-4">You need to be logged in to apply for this job</p>
               <Button
                 onClick={() => navigate('/auth')}
-                className="bg-gradient-to-r from-emerald-500 to-blue-500"
+                className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white hover:from-emerald-600 hover:to-blue-600"
               >
                 Sign In to Apply
               </Button>

@@ -297,14 +297,28 @@ export const updateApplicationStatus = async (applicationId: string, status: str
 export const uploadFile = async (file: File, path: string) => {
   try {
     console.log('Uploading file:', file.name, 'to path:', path);
+    
+    // Validate file
+    if (!file) {
+      throw new Error('No file provided');
+    }
+    
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      throw new Error('File size must be less than 10MB');
+    }
+
     const fileRef = ref(storage, path);
+    console.log('Created file reference:', path);
+    
     const snapshot = await uploadBytes(fileRef, file);
+    console.log('File uploaded, getting download URL...');
+    
     const downloadURL = await getDownloadURL(snapshot.ref);
     console.log('File uploaded successfully:', downloadURL);
     return downloadURL;
   } catch (error) {
     console.error('Error uploading file:', error);
-    throw error;
+    throw new Error(`Upload failed: ${error.message || 'Unknown error'}`);
   }
 };
 

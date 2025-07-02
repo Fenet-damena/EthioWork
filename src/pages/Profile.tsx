@@ -28,23 +28,44 @@ const Profile = () => {
       // Upload profile image if provided
       if (profileImage) {
         console.log('Uploading profile image...');
-        const imageUrl = await uploadFile(
-          profileImage, 
-          `profiles/${currentUser.uid}/profile-image-${Date.now()}.${profileImage.name.split('.').pop()}`
-        );
-        updatedProfile.profileImageUrl = imageUrl;
-        console.log('Profile image uploaded:', imageUrl);
+        try {
+          const imageUrl = await uploadFile(
+            profileImage, 
+            `profiles/${currentUser.uid}/profile-image-${Date.now()}.${profileImage.name.split('.').pop()}`
+          );
+          updatedProfile.profileImageUrl = imageUrl;
+          console.log('Profile image uploaded:', imageUrl);
+        } catch (uploadError) {
+          console.error('Error uploading profile image:', uploadError);
+          toast({
+            title: "Image Upload Failed",
+            description: "Failed to upload profile image. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       // Upload resume if provided
       if (resume) {
         console.log('Uploading resume...');
-        const resumeUrl = await uploadFile(
-          resume, 
-          `profiles/${currentUser.uid}/resume-${Date.now()}.${resume.name.split('.').pop()}`
-        );
-        updatedProfile.resumeUrl = resumeUrl;
-        console.log('Resume uploaded:', resumeUrl);
+        try {
+          const resumeUrl = await uploadFile(
+            resume, 
+            `profiles/${currentUser.uid}/resume-${Date.now()}.${resume.name.split('.').pop()}`
+          );
+          updatedProfile.resumeUrl = resumeUrl;
+          updatedProfile.resumeName = resume.name;
+          console.log('Resume uploaded:', resumeUrl);
+        } catch (uploadError) {
+          console.error('Error uploading resume:', uploadError);
+          toast({
+            title: "Resume Upload Failed",
+            description: "Failed to upload resume. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       // Update profile in Firestore
@@ -88,9 +109,8 @@ const Profile = () => {
         {/* Header */}
         <div className="flex items-center mb-8">
           <Button
-            variant="ghost"
             onClick={() => navigate('/dashboard')}
-            className="mr-4 text-gray-300 hover:text-white hover:bg-gray-800 bg-gray-900"
+            className="mr-4 bg-white text-black hover:bg-gray-200"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard

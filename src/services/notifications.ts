@@ -18,6 +18,7 @@ export const createNotification = async (notification: Omit<Notification, 'id'>)
     const notificationWithId = {
       ...notification,
       id: Date.now().toString(),
+      createdAt: new Date()
     };
 
     const userRef = doc(db, 'users', notification.userId);
@@ -81,21 +82,22 @@ export const notifyJobSeekers = async (jobData: any) => {
     );
     const querySnapshot = await getDocs(usersQuery);
     
-    const notifications = querySnapshot.docs.map(userDoc => {
+    // Create notifications for all job seekers
+    const notificationPromises = querySnapshot.docs.map(async (userDoc) => {
       const userData = userDoc.data();
       return createNotification({
         userId: userData.uid,
         type: 'job_alert',
-        title: 'New Job Posted!',
-        message: `A new job "${jobData.title}" has been posted that might interest you.`,
+        title: 'New Job Alert!',
+        message: `A new job "${jobData.title}" at ${jobData.company} has been posted. Check it out now!`,
         jobId: jobData.id,
         isRead: false,
         createdAt: new Date()
       });
     });
 
-    await Promise.all(notifications);
-    console.log('Job seekers notified successfully');
+    await Promise.all(notificationPromises);
+    console.log(`Job alert sent to ${querySnapshot.docs.length} job seekers`);
   } catch (error) {
     console.error('Error notifying job seekers:', error);
   }

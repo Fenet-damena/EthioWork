@@ -8,6 +8,12 @@ export const saveJob = async (userId: string, jobId: string) => {
     console.log('Saving job:', jobId, 'for user:', userId);
     
     const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      throw new Error('User not found');
+    }
+    
     await updateDoc(userRef, {
       savedJobs: arrayUnion(jobId),
       updatedAt: new Date()
@@ -39,9 +45,11 @@ export const unsaveJob = async (userId: string, jobId: string) => {
 
 export const getSavedJobs = async (userId: string) => {
   try {
+    console.log('Fetching saved jobs for user:', userId);
     const userDoc = await getDoc(doc(db, 'users', userId));
     if (userDoc.exists()) {
       const savedJobIds = userDoc.data().savedJobs || [];
+      console.log('Found saved job IDs:', savedJobIds);
       
       if (savedJobIds.length === 0) return [];
       
@@ -49,7 +57,8 @@ export const getSavedJobs = async (userId: string) => {
       const savedJobs = await Promise.all(
         savedJobIds.map(async (jobId: string) => {
           try {
-            return await getJobById(jobId);
+            const job = await getJobById(jobId);
+            return job;
           } catch (error) {
             console.error('Error fetching saved job:', jobId, error);
             return null;
@@ -57,7 +66,9 @@ export const getSavedJobs = async (userId: string) => {
         })
       );
       
-      return savedJobs.filter(job => job !== null);
+      const validJobs = savedJobs.filter(job => job !== null);
+      console.log('Returning saved jobs:', validJobs.length);
+      return validJobs;
     }
     return [];
   } catch (error) {
