@@ -96,6 +96,7 @@ export const getAllJobs = async () => {
 export const getJobById = async (jobId: string) => {
   try {
     const { db } = await connectToDatabase();
+    // Convert string to ObjectId for MongoDB queries
     const job = await db.collection('jobs').findOne({ _id: new ObjectId(jobId) });
     
     if (job) {
