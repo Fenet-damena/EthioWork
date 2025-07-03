@@ -310,3 +310,93 @@ export const deleteUser = async (userId: string) => {
     throw error;
   }
 };
+
+// Additional operations for compatibility with existing hooks
+export const updateApplicationStatus = async (applicationId: string, status: string) => {
+  try {
+    const { db } = await connectToDatabase();
+    await db.collection('applications').updateOne(
+      { _id: new ObjectId(applicationId) },
+      { 
+        $set: { 
+          status,
+          updatedAt: new Date()
+        } 
+      }
+    );
+    console.log('Application status updated');
+  } catch (error) {
+    console.error('Error updating application status:', error);
+    throw error;
+  }
+};
+
+export const getJobsByEmployer = async (employerId: string) => {
+  try {
+    const { db } = await connectToDatabase();
+    const jobs = await db.collection('jobs')
+      .find({ employerId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    return jobs.map(job => ({
+      ...job,
+      id: job._id.toString(),
+      _id: undefined
+    }));
+  } catch (error) {
+    console.error('Error fetching employer jobs:', error);
+    throw error;
+  }
+};
+
+export const updateJob = async (jobId: string, jobData: any) => {
+  try {
+    const { db } = await connectToDatabase();
+    await db.collection('jobs').updateOne(
+      { _id: new ObjectId(jobId) },
+      { 
+        $set: { 
+          ...jobData, 
+          updatedAt: new Date() 
+        } 
+      }
+    );
+    console.log('Job updated successfully');
+  } catch (error) {
+    console.error('Error updating job:', error);
+    throw error;
+  }
+};
+
+export const deleteJob = async (jobId: string) => {
+  try {
+    const { db } = await connectToDatabase();
+    await db.collection('jobs').deleteOne({ _id: new ObjectId(jobId) });
+    console.log('Job deleted successfully');
+  } catch (error) {
+    console.error('Error deleting job:', error);
+    throw error;
+  }
+};
+
+export const getStatistics = async () => {
+  try {
+    const { db } = await connectToDatabase();
+    
+    const [totalUsers, totalJobs, totalApplications] = await Promise.all([
+      db.collection('users').countDocuments(),
+      db.collection('jobs').countDocuments(),
+      db.collection('applications').countDocuments()
+    ]);
+    
+    return {
+      totalUsers,
+      totalJobs,
+      totalApplications
+    };
+  } catch (error) {
+    console.error('Error fetching statistics:', error);
+    throw error;
+  }
+};

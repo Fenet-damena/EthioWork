@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useAuth';
-import { updateUserProfile, uploadFile } from '@/services/firebase';
+import { updateUserProfile } from '@/services/mongodb';
+import { uploadFile } from '@/services/firebase';
 import { useToast } from '@/hooks/use-toast';
 import ProfileManagement from '@/components/profile/ProfileManagement';
 import { Button } from '@/components/ui/button';
@@ -79,7 +80,7 @@ const Profile = () => {
         }
       }
 
-      // Update profile in Firestore
+      // Update profile in MongoDB
       await updateUserProfile(currentUser.uid, {
         profile: updatedProfile,
         updatedAt: new Date()

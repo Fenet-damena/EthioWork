@@ -4,7 +4,7 @@ import { MongoClient, Db } from 'mongodb';
 let client: MongoClient;
 let db: Db;
 
-const MONGODB_URI = 'mongodb+srv://your-username:your-password@cluster0.xxxxx.mongodb.net/';
+const MONGODB_URI = 'mongodb+srv://Fenet:abcd123@ethiowork.nkfngtd.mongodb.net/?retryWrites=true&w=majority&appName=EthioWork';
 const DATABASE_NAME = 'ethiowork';
 
 export const connectToDatabase = async () => {

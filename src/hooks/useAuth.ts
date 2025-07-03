@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
+import { createUserProfile, getUserProfile, updateUserProfile } from '@/services/mongodb';
 import { UserRole } from '@/types/user';
 
 export const useAuthActions = () => {
@@ -18,7 +18,7 @@ export const useAuthActions = () => {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       console.log('User created successfully:', user.uid);
       
-      // Create user profile in Firestore
+      // Create user profile in MongoDB
       const userDoc = {
         uid: user.uid,
         email,
@@ -30,7 +30,7 @@ export const useAuthActions = () => {
       };
       
       console.log('Creating user document:', userDoc);
-      await setDoc(doc(db, 'users', user.uid), userDoc);
+      await createUserProfile(user.uid, userDoc);
       console.log('User profile created successfully');
       
       return user;
@@ -65,9 +65,9 @@ export const useAuthActions = () => {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful for user:', user.uid);
       
-      // Verify user profile exists in Firestore
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (!userDoc.exists()) {
+      // Verify user profile exists in MongoDB
+      const userDoc = await getUserProfile(user.uid);
+      if (!userDoc) {
         console.log('User profile not found, creating default profile');
         // Create a basic profile if it doesn't exist
         const defaultProfile = {
@@ -86,7 +86,7 @@ export const useAuthActions = () => {
           updatedAt: new Date(),
           isActive: true,
         };
-        await setDoc(doc(db, 'users', user.uid), defaultProfile);
+        await createUserProfile(user.uid, defaultProfile);
       }
       
       return user;
@@ -173,10 +173,9 @@ export const useUserProfile = (userId: string | null) => {
       try {
         console.log('Fetching profile for user:', userId);
         
-        const userDoc = await getDoc(doc(db, 'users', userId));
+        const userData = await getUserProfile(userId);
         
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
+        if (userData) {
           console.log('Profile found:', userData);
           setProfile(userData);
         } else {
@@ -199,7 +198,7 @@ export const useUserProfile = (userId: string | null) => {
             isActive: true,
           };
           
-          await setDoc(doc(db, 'users', userId), defaultProfile);
+          await createUserProfile(userId, defaultProfile);
           setProfile(defaultProfile);
         }
       } catch (error: any) {
