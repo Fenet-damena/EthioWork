@@ -14,14 +14,9 @@ import {
   arrayRemove,
   Timestamp
 } from 'firebase/firestore';
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  deleteObject 
-} from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { UserRole, Job, JobApplication } from '@/types/user';
+import { uploadFileToSupabase, deleteFileFromSupabase } from './supabaseStorage';
 
 // User Profile Operations
 export const createUserProfile = async (userId: string, data: any) => {
@@ -293,7 +288,7 @@ export const updateApplicationStatus = async (applicationId: string, status: str
   }
 };
 
-// File Upload Operations
+// File Upload Operations - Now using Supabase Storage
 export const uploadFile = async (file: File, path: string) => {
   try {
     console.log('Uploading file:', file.name, 'to path:', path);
@@ -307,14 +302,24 @@ export const uploadFile = async (file: File, path: string) => {
       throw new Error('File size must be less than 10MB');
     }
 
-    const fileRef = ref(storage, path);
-    console.log('Created file reference:', path);
+    // Determine bucket and folder from path
+    let bucket = 'profiles';
+    let folder = 'general';
     
-    const snapshot = await uploadBytes(fileRef, file);
-    console.log('File uploaded, getting download URL...');
+    if (path.includes('profile')) {
+      bucket = 'profiles';
+      folder = 'images';
+    } else if (path.includes('resume')) {
+      bucket = 'resumes';
+      folder = 'documents';
+    }
     
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    console.log('File uploaded successfully:', downloadURL);
+    // Extract userId from path (assuming format: profiles/userId/...)
+    const pathParts = path.split('/');
+    const userId = pathParts[1] || 'anonymous';
+    
+    const downloadURL = await uploadFileToSupabase(file, bucket, folder, userId);
+    console.log('File uploaded successfully to Supabase:', downloadURL);
     return downloadURL;
   } catch (error) {
     console.error('Error uploading file:', error);
@@ -324,8 +329,19 @@ export const uploadFile = async (file: File, path: string) => {
 
 export const deleteFile = async (path: string) => {
   try {
-    const fileRef = ref(storage, path);
-    await deleteObject(fileRef);
+    console.log('Deleting file:', path);
+    
+    // Determine bucket from path
+    let bucket = 'profiles';
+    if (path.includes('resume')) {
+      bucket = 'resumes';
+    }
+    
+    // Extract the file path from the full URL
+    const urlParts = path.split('/');
+    const fileName = urlParts[urlParts.length - 1];
+    
+    await deleteFileFromSupabase(bucket, fileName);
   } catch (error) {
     console.error('Error deleting file:', error);
     throw error;
