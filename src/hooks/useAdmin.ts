@@ -7,7 +7,7 @@ import {
   deleteUser, 
   getAllJobs,
   getStatistics 
-} from '@/services/mongodb';
+} from '@/services/dataService';
 
 export const useAdmin = () => {
   const [users, setUsers] = useState([]);

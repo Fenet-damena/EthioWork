@@ -5,7 +5,7 @@ import {
   getApplicationsByJob, 
   getApplicationsByUser, 
   updateApplicationStatus 
-} from '@/services/mongodb';
+} from '@/services/dataService';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useApplications = (jobId?: string) => {

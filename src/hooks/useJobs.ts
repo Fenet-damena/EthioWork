@@ -7,7 +7,7 @@ import {
   updateJob, 
   deleteJob, 
   getJobsByEmployer 
-} from '@/services/mongodb';
+} from '@/services/dataService';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useJobs = () => {

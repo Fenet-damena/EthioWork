@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { createUserProfile, getUserProfile, updateUserProfile } from '@/services/mongodb';
+import { createUserProfile, getUserProfile, updateUserProfile } from '@/services/dataService';
 import { UserRole } from '@/types/user';
 
 export const useAuthActions = () => {
@@ -18,7 +18,7 @@ export const useAuthActions = () => {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       console.log('User created successfully:', user.uid);
       
-      // Create user profile in MongoDB
+      // Create user profile in database
       const userDoc = {
         uid: user.uid,
         email,
@@ -65,7 +65,7 @@ export const useAuthActions = () => {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful for user:', user.uid);
       
-      // Verify user profile exists in MongoDB
+      // Verify user profile exists in database
       const userDoc = await getUserProfile(user.uid);
       if (!userDoc) {
         console.log('User profile not found, creating default profile');

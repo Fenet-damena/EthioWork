@@ -1,5 +1,5 @@
 
-import { rateJobSeeker as mongoRateJobSeeker, getUserRatings as mongoGetUserRatings } from './mongodb';
+import { rateJobSeeker as dataRateJobSeeker, getUserRatings as dataGetUserRatings } from './dataService';
 
 export interface Rating {
   id: string;
@@ -11,9 +11,9 @@ export interface Rating {
 }
 
 export const rateJobSeeker = async (jobSeekerId: string, rating: Rating) => {
-  return await mongoRateJobSeeker(jobSeekerId, rating);
+  return await dataRateJobSeeker(jobSeekerId, rating);
 };
 
 export const getUserRatings = async (userId: string) => {
-  return await mongoGetUserRatings(userId);
+  return await dataGetUserRatings(userId);
 };
