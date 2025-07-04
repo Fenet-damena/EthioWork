@@ -7,7 +7,7 @@ export const createUserProfile = async (userId: string, data: any) => {
   try {
     const { db } = await connectToDatabase();
     const userDoc = {
-      _id: userId,
+      userId, // Use userId field instead of _id
       ...data,
       uid: userId,
       updatedAt: new Date(),
@@ -25,7 +25,7 @@ export const createUserProfile = async (userId: string, data: any) => {
 export const getUserProfile = async (userId: string) => {
   try {
     const { db } = await connectToDatabase();
-    const user = await db.collection('users').findOne({ _id: userId });
+    const user = await db.collection('users').findOne({ userId });
     return user;
   } catch (error) {
     console.error('Error getting user profile:', error);
@@ -37,7 +37,7 @@ export const updateUserProfile = async (userId: string, data: any) => {
   try {
     const { db } = await connectToDatabase();
     await db.collection('users').updateOne(
-      { _id: userId },
+      { userId },
       { 
         $set: { 
           ...data, 
@@ -118,8 +118,8 @@ export const rateJobSeeker = async (jobSeekerId: string, rating: any) => {
   try {
     const { db } = await connectToDatabase();
     
-    // Get current user profile
-    const user = await db.collection('users').findOne({ _id: jobSeekerId });
+    // Get current user profile using userId field
+    const user = await db.collection('users').findOne({ userId: jobSeekerId });
     if (!user) {
       throw new Error('User not found');
     }
@@ -149,7 +149,7 @@ export const rateJobSeeker = async (jobSeekerId: string, rating: any) => {
     };
     
     await db.collection('users').updateOne(
-      { _id: jobSeekerId },
+      { userId: jobSeekerId },
       { 
         $set: { 
           profile: updatedProfile,
@@ -169,7 +169,7 @@ export const rateJobSeeker = async (jobSeekerId: string, rating: any) => {
 export const getUserRatings = async (userId: string) => {
   try {
     const { db } = await connectToDatabase();
-    const user = await db.collection('users').findOne({ _id: userId });
+    const user = await db.collection('users').findOne({ userId });
     return user?.profile?.ratings || [];
   } catch (error) {
     console.error('Error fetching ratings:', error);
@@ -264,7 +264,7 @@ export const banUser = async (userId: string) => {
   try {
     const { db } = await connectToDatabase();
     await db.collection('users').updateOne(
-      { _id: userId },
+      { userId },
       { 
         $set: { 
           banned: true,
@@ -284,7 +284,7 @@ export const unbanUser = async (userId: string) => {
   try {
     const { db } = await connectToDatabase();
     await db.collection('users').updateOne(
-      { _id: userId },
+      { userId },
       { 
         $set: { 
           banned: false,
@@ -303,7 +303,7 @@ export const unbanUser = async (userId: string) => {
 export const deleteUser = async (userId: string) => {
   try {
     const { db } = await connectToDatabase();
-    await db.collection('users').deleteOne({ _id: userId });
+    await db.collection('users').deleteOne({ userId });
     console.log('User deleted successfully');
   } catch (error) {
     console.error('Error deleting user:', error);
