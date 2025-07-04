@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { createUserProfile, getUserProfile, updateUserProfile } from '@/services/dataService';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 import { UserRole } from '@/types/user';
 
 export const useAuthActions = () => {
@@ -18,7 +18,7 @@ export const useAuthActions = () => {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       console.log('User created successfully:', user.uid);
       
-      // Create user profile in database
+      // Create user profile in Firestore
       const userDoc = {
         uid: user.uid,
         email,
@@ -30,7 +30,7 @@ export const useAuthActions = () => {
       };
       
       console.log('Creating user document:', userDoc);
-      await createUserProfile(user.uid, userDoc);
+      await setDoc(doc(db, 'users', user.uid), userDoc);
       console.log('User profile created successfully');
       
       return user;
@@ -65,9 +65,9 @@ export const useAuthActions = () => {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful for user:', user.uid);
       
-      // Verify user profile exists in database
-      const userDoc = await getUserProfile(user.uid);
-      if (!userDoc) {
+      // Verify user profile exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
         console.log('User profile not found, creating default profile');
         // Create a basic profile if it doesn't exist
         const defaultProfile = {
@@ -86,7 +86,7 @@ export const useAuthActions = () => {
           updatedAt: new Date(),
           isActive: true,
         };
-        await createUserProfile(user.uid, defaultProfile);
+        await setDoc(doc(db, 'users', user.uid), defaultProfile);
       }
       
       return user;
@@ -173,9 +173,10 @@ export const useUserProfile = (userId: string | null) => {
       try {
         console.log('Fetching profile for user:', userId);
         
-        const userData = await getUserProfile(userId);
+        const userDoc = await getDoc(doc(db, 'users', userId));
         
-        if (userData) {
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
           console.log('Profile found:', userData);
           setProfile(userData);
         } else {
@@ -198,7 +199,7 @@ export const useUserProfile = (userId: string | null) => {
             isActive: true,
           };
           
-          await createUserProfile(userId, defaultProfile);
+          await setDoc(doc(db, 'users', userId), defaultProfile);
           setProfile(defaultProfile);
         }
       } catch (error: any) {

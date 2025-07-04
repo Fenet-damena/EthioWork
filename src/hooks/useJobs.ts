@@ -7,7 +7,7 @@ import {
   updateJob, 
   deleteJob, 
   getJobsByEmployer 
-} from '@/services/dataService';
+} from '@/services/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useJobs = () => {

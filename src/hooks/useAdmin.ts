@@ -7,7 +7,7 @@ import {
   deleteUser, 
   getAllJobs,
   getStatistics 
-} from '@/services/dataService';
+} from '@/services/firebase';
 
 export const useAdmin = () => {
   const [users, setUsers] = useState([]);

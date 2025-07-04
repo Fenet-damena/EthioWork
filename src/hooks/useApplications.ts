@@ -5,7 +5,7 @@ import {
   getApplicationsByJob, 
   getApplicationsByUser, 
   updateApplicationStatus 
-} from '@/services/dataService';
+} from '@/services/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useApplications = (jobId?: string) => {
