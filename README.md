@@ -52,8 +52,8 @@ A modern job board platform built with React, TypeScript, and Firebase, featurin
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd ethiowork
+git clone https://github.com/Fenet-damena/EthioWork.git
+cd EthioWork
 ```
 
 2. Install dependencies:
