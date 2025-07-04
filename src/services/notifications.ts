@@ -102,3 +102,41 @@ export const notifyJobSeekers = async (jobData: any) => {
     console.error('Error notifying job seekers:', error);
   }
 };
+
+// Notify applicant about status change
+export const notifyApplicationStatusChange = async (applicantId: string, jobTitle: string, newStatus: string) => {
+  try {
+    let title = '';
+    let message = '';
+
+    switch (newStatus) {
+      case 'shortlisted':
+        title = 'Great News! You\'ve been shortlisted';
+        message = `Your application for "${jobTitle}" has been shortlisted. The employer is interested in your profile!`;
+        break;
+      case 'accepted':
+        title = 'Congratulations! Your application was accepted';
+        message = `Your application for "${jobTitle}" has been accepted. Congratulations on your new opportunity!`;
+        break;
+      case 'rejected':
+        title = 'Application Status Update';
+        message = `Your application for "${jobTitle}" was not selected this time. Keep applying - the right opportunity is out there!`;
+        break;
+      default:
+        return;
+    }
+
+    await createNotification({
+      userId: applicantId,
+      type: 'application_update',
+      title,
+      message,
+      isRead: false,
+      createdAt: new Date()
+    });
+
+    console.log(`Notification sent to applicant ${applicantId} about status change to ${newStatus}`);
+  } catch (error) {
+    console.error('Error notifying applicant about status change:', error);
+  }
+};

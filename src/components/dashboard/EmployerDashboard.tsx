@@ -12,19 +12,30 @@ import {
   Eye,
   Edit,
   Trash2,
-  UserSearch
+  UserSearch,
+  Ban
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getJobsByEmployer, deleteJob } from '@/services/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { useUserProfile } from '@/hooks/useAuth';
 
 const EmployerDashboard = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const { profile } = useUserProfile(currentUser?.uid || null);
   const { toast } = useToast();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Prevent employers from applying to jobs
+  useEffect(() => {
+    if (currentUser && profile?.role === 'employer') {
+      // Add a flag to prevent job applications
+      localStorage.setItem('userRole', 'employer');
+    }
+  }, [currentUser, profile]);
 
   const fetchJobs = async () => {
     if (!currentUser) return;
@@ -160,6 +171,18 @@ const EmployerDashboard = () => {
             {loading ? 'Refreshing...' : 'Refresh Jobs'}
           </Button>
         </div>
+
+        {/* Employer Restriction Notice */}
+        <Card className="bg-red-900/20 border-red-800 mb-8">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <Ban className="h-5 w-5 text-red-400" />
+              <p className="text-red-300 text-sm">
+                <strong>Note:</strong> As an employer, you cannot apply to job postings. Your account is restricted to posting jobs and reviewing applications.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Job Listings */}
         <Card className="bg-gray-900/50 border-gray-800">

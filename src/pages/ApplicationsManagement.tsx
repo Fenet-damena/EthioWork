@@ -17,9 +17,11 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Download
+  Eye,
+  Star
 } from 'lucide-react';
 import { getApplicationsByJob, updateApplicationStatus, getJobById, getUserProfile } from '@/services/firebase';
+import { notifyApplicationStatusChange } from '@/services/notifications';
 
 const ApplicationsManagement = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -79,15 +81,21 @@ const ApplicationsManagement = () => {
     }
   };
 
-  const updateStatus = async (applicationId: string, status: string) => {
+  const updateStatus = async (applicationId: string, status: string, applicantId: string) => {
     try {
       console.log('Updating application status:', applicationId, status);
       await updateApplicationStatus(applicationId, status);
+      
+      // Send notification to applicant
+      if (job?.title) {
+        await notifyApplicationStatusChange(applicantId, job.title, status);
+      }
+      
       await fetchData(); // Refresh data
       
       toast({
         title: "Application status updated",
-        description: `Application has been ${status}.`
+        description: `Application has been ${status}. Applicant has been notified.`
       });
     } catch (error: any) {
       console.error('Error updating status:', error);
@@ -112,27 +120,44 @@ const ApplicationsManagement = () => {
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full flex items-center justify-center">
-              <User className="h-6 w-6 text-white" />
+            <div className="w-16 h-16 rounded-full overflow-hidden">
+              {application.applicantProfile?.profile?.profileImageUrl ? (
+                <img 
+                  src={application.applicantProfile.profile.profileImageUrl} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-emerald-500 to-blue-500 flex items-center justify-center">
+                  <User className="h-8 w-8 text-white" />
+                </div>
+              )}
             </div>
             <div>
-              <h3 className="font-semibold text-white">
+              <h3 className="font-semibold text-white text-lg">
                 {application.applicantProfile?.profile?.firstName || 'Unknown'} {application.applicantProfile?.profile?.lastName || 'User'}
               </h3>
               <p className="text-gray-400 text-sm">
                 Applied {new Date(application.appliedAt?.toDate?.() || application.appliedAt).toLocaleDateString()}
               </p>
+              {application.applicantProfile?.profile?.experience && (
+                <p className="text-emerald-400 text-sm font-medium">
+                  {application.applicantProfile.profile.experience} years experience
+                </p>
+              )}
             </div>
           </div>
           <Badge 
             variant={
               application.status === 'pending' ? 'secondary' :
               application.status === 'shortlisted' ? 'default' : 
+              application.status === 'accepted' ? 'default' :
               'destructive'
             }
             className={
               application.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-              application.status === 'shortlisted' ? 'bg-green-500/20 text-green-400' :
+              application.status === 'shortlisted' ? 'bg-blue-500/20 text-blue-400' :
+              application.status === 'accepted' ? 'bg-green-500/20 text-green-400' :
               'bg-red-500/20 text-red-400'
             }
           >
@@ -159,18 +184,18 @@ const ApplicationsManagement = () => {
               {application.applicantProfile.profile.location}
             </div>
           )}
-          {application.applicantProfile?.profile?.experience && (
+          {application.applicantProfile?.profile?.education && (
             <div className="flex items-center text-gray-300">
-              <Calendar className="h-4 w-4 mr-2" />
-              {application.applicantProfile.profile.experience} years experience
+              <Star className="h-4 w-4 mr-2" />
+              Education background available
             </div>
           )}
         </div>
 
         {application.applicantProfile?.profile?.bio && (
           <div className="mb-4">
-            <p className="text-gray-400 text-sm mb-2">Bio:</p>
-            <p className="text-gray-300 text-sm bg-gray-800 p-3 rounded">
+            <p className="text-gray-400 text-sm mb-2 font-medium">Professional Bio:</p>
+            <p className="text-gray-300 text-sm bg-gray-800/50 p-3 rounded border-l-4 border-emerald-500">
               {application.applicantProfile.profile.bio}
             </p>
           </div>
@@ -178,10 +203,10 @@ const ApplicationsManagement = () => {
 
         {application.applicantProfile?.profile?.skills?.length > 0 && (
           <div className="mb-4">
-            <p className="text-gray-400 text-sm mb-2">Skills:</p>
+            <p className="text-gray-400 text-sm mb-2 font-medium">Skills & Expertise:</p>
             <div className="flex flex-wrap gap-2">
               {application.applicantProfile.profile.skills.map((skill: string, index: number) => (
-                <Badge key={index} variant="outline" className="border-gray-600 text-gray-300">
+                <Badge key={index} variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
                   {skill}
                 </Badge>
               ))}
@@ -189,10 +214,19 @@ const ApplicationsManagement = () => {
           </div>
         )}
 
+        {application.applicantProfile?.profile?.education && (
+          <div className="mb-4">
+            <p className="text-gray-400 text-sm mb-2 font-medium">Education:</p>
+            <p className="text-gray-300 text-sm bg-gray-800/50 p-3 rounded">
+              {application.applicantProfile.profile.education}
+            </p>
+          </div>
+        )}
+
         {application.coverLetter && (
           <div className="mb-4">
-            <p className="text-gray-400 text-sm mb-2">Cover Letter:</p>
-            <p className="text-gray-300 text-sm bg-gray-800 p-3 rounded">
+            <p className="text-gray-400 text-sm mb-2 font-medium">Cover Letter:</p>
+            <p className="text-gray-300 text-sm bg-gray-800/50 p-3 rounded border-l-4 border-blue-500">
               {application.coverLetter}
             </p>
           </div>
@@ -203,7 +237,7 @@ const ApplicationsManagement = () => {
             <Button
               variant="outline"
               onClick={() => window.open(application.applicantProfile.profile.resumeUrl, '_blank')}
-              className="border-gray-700"
+              className="border-emerald-600 text-emerald-400 hover:bg-emerald-600/10"
             >
               <FileText className="h-4 w-4 mr-2" />
               View Resume
@@ -214,10 +248,10 @@ const ApplicationsManagement = () => {
             <Button
               variant="outline"
               onClick={() => contactApplicant(application.applicantProfile.email)}
-              className="border-gray-700"
+              className="border-blue-600 text-blue-400 hover:bg-blue-600/10"
             >
               <Mail className="h-4 w-4 mr-2" />
-              Contact
+              Contact Applicant
             </Button>
           )}
         </div>
@@ -226,14 +260,21 @@ const ApplicationsManagement = () => {
           {application.status === 'pending' && (
             <>
               <Button
-                onClick={() => updateStatus(application.id, 'shortlisted')}
-                className="bg-green-600 hover:bg-green-700"
+                onClick={() => updateStatus(application.id, 'shortlisted', application.applicantId)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <Eye className="h-4 w-4 mr-2" />
                 Shortlist
               </Button>
               <Button
-                onClick={() => updateStatus(application.id, 'rejected')}
+                onClick={() => updateStatus(application.id, 'accepted', application.applicantId)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Accept
+              </Button>
+              <Button
+                onClick={() => updateStatus(application.id, 'rejected', application.applicantId)}
                 variant="destructive"
               >
                 <XCircle className="h-4 w-4 mr-2" />
@@ -242,17 +283,26 @@ const ApplicationsManagement = () => {
             </>
           )}
           {application.status === 'shortlisted' && (
-            <Button
-              onClick={() => updateStatus(application.id, 'rejected')}
-              variant="destructive"
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Reject
-            </Button>
+            <>
+              <Button
+                onClick={() => updateStatus(application.id, 'accepted', application.applicantId)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Accept
+              </Button>
+              <Button
+                onClick={() => updateStatus(application.id, 'rejected', application.applicantId)}
+                variant="destructive"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Reject
+              </Button>
+            </>
           )}
-          {application.status === 'rejected' && (
+          {(application.status === 'rejected' || application.status === 'accepted') && (
             <Button
-              onClick={() => updateStatus(application.id, 'pending')}
+              onClick={() => updateStatus(application.id, 'pending', application.applicantId)}
               variant="outline"
               className="border-gray-700"
             >
@@ -304,6 +354,9 @@ const ApplicationsManagement = () => {
             <TabsTrigger value="shortlisted" className="data-[state=active]:bg-gray-800">
               Shortlisted ({getApplicationsByStatus('shortlisted').length})
             </TabsTrigger>
+            <TabsTrigger value="accepted" className="data-[state=active]:bg-gray-800">
+              Accepted ({getApplicationsByStatus('accepted').length})
+            </TabsTrigger>
             <TabsTrigger value="rejected" className="data-[state=active]:bg-gray-800">
               Rejected ({getApplicationsByStatus('rejected').length})
             </TabsTrigger>
@@ -330,8 +383,22 @@ const ApplicationsManagement = () => {
               ))}
               {getApplicationsByStatus('shortlisted').length === 0 && (
                 <div className="text-center py-8">
-                  <CheckCircle className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                  <Eye className="h-12 w-12 text-gray-600 mx-auto mb-4" />
                   <p className="text-gray-400">No shortlisted applications</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="accepted">
+            <div className="space-y-4">
+              {getApplicationsByStatus('accepted').map((application) => (
+                <ApplicationCard key={application.id} application={application} />
+              ))}
+              {getApplicationsByStatus('accepted').length === 0 && (
+                <div className="text-center py-8">
+                  <CheckCircle className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400">No accepted applications</p>
                 </div>
               )}
             </div>

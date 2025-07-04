@@ -14,11 +14,13 @@ import {
   DollarSign, 
   Briefcase,
   Heart,
-  HeartHandshake
+  HeartHandshake,
+  Ban
 } from 'lucide-react';
 import { useJob } from '@/hooks/useJobs';
 import { useApplications } from '@/hooks/useApplications';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile } from '@/hooks/useAuth';
 import { saveJob, unsaveJob, isJobSaved } from '@/services/savedJobs';
 
 const JobDetails = () => {
@@ -26,12 +28,16 @@ const JobDetails = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentUser } = useAuth();
+  const { profile } = useUserProfile(currentUser?.uid || null);
   const { job, loading } = useJob(jobId || '');
   const { submitApplication } = useApplications();
   const [coverLetter, setCoverLetter] = useState('');
   const [applying, setApplying] = useState(false);
   const [jobSaved, setJobSaved] = useState(false);
   const [savingJob, setSavingJob] = useState(false);
+
+  // Check if user is an employer
+  const isEmployer = profile?.role === 'employer';
 
   useEffect(() => {
     const checkIfJobSaved = async () => {
@@ -76,6 +82,16 @@ const JobDetails = () => {
 
   const handleApply = async () => {
     if (!currentUser || !job) return;
+
+    // Prevent employers from applying
+    if (isEmployer) {
+      toast({
+        title: "Action Not Allowed",
+        description: "Employers cannot apply to job postings. You can only post jobs and review applications.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       setApplying(true);
@@ -140,7 +156,7 @@ const JobDetails = () => {
             Back to Jobs
           </Button>
 
-          {currentUser && (
+          {currentUser && !isEmployer && (
             <Button
               onClick={handleSaveJob}
               disabled={savingJob}
@@ -240,7 +256,7 @@ const JobDetails = () => {
         </Card>
 
         {/* Application Section */}
-        {currentUser && (
+        {currentUser && !isEmployer && (
           <Card className="bg-gray-900/50 border-gray-800">
             <CardHeader>
               <CardTitle className="text-white">Apply for this Position</CardTitle>
@@ -266,6 +282,25 @@ const JobDetails = () => {
                   {applying ? 'Submitting...' : 'Submit Application'}
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Employer Restriction Notice */}
+        {currentUser && isEmployer && (
+          <Card className="bg-red-900/20 border-red-800">
+            <CardContent className="p-8 text-center">
+              <Ban className="h-12 w-12 text-red-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-red-300 mb-2">Employer Account</h3>
+              <p className="text-red-400 mb-4">
+                As an employer, you cannot apply to job postings. Your account is designed for posting jobs and reviewing applications.
+              </p>
+              <Button
+                onClick={() => navigate('/post-job')}
+                className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white hover:from-emerald-600 hover:to-blue-600"
+              >
+                Post a Job Instead
+              </Button>
             </CardContent>
           </Card>
         )}

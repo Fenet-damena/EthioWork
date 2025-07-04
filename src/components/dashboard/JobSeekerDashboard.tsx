@@ -10,7 +10,7 @@ import {
   User, 
   FileText, 
   Search, 
-  Bookmark, 
+  Heart, 
   Bell, 
   TrendingUp,
   MapPin,
@@ -20,12 +20,15 @@ import {
 import { useApplications } from '@/hooks/useApplications';
 import { useUserProfile } from '@/hooks/useAuth';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSavedJobs } from '@/hooks/useSavedJobs';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 const JobSeekerDashboard = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { profile } = useUserProfile(currentUser?.uid || null);
   const { applications } = useApplications();
+  const { savedJobs } = useSavedJobs();
 
   const profileCompletionScore = React.useMemo(() => {
     if (!profile?.profile) return 0;
@@ -120,16 +123,16 @@ const JobSeekerDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Profile Score</p>
-                  <p className="text-2xl font-bold text-blue-400">{Math.round(profileCompletionScore)}%</p>
+                  <p className="text-gray-400 text-sm">Saved Jobs</p>
+                  <p className="text-2xl font-bold text-blue-400">{savedJobs.length}</p>
                 </div>
-                <User className="h-8 w-8 text-blue-400" />
+                <Heart className="h-8 w-8 text-blue-400" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Completion */}
           <Card className="bg-gray-900/50 border-gray-800">
             <CardHeader>
@@ -192,11 +195,12 @@ const JobSeekerDashboard = () => {
               </Button>
               
               <Button 
+                onClick={() => navigate('/saved-jobs')}
                 variant="outline" 
                 className="w-full border-gray-700 justify-start"
               >
-                <Bookmark className="h-4 w-4 mr-2" />
-                Saved Jobs
+                <Heart className="h-4 w-4 mr-2" />
+                Saved Jobs ({savedJobs.length})
               </Button>
               
               <Button 
@@ -217,6 +221,11 @@ const JobSeekerDashboard = () => {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Notifications */}
+          <div className="lg:row-span-2">
+            <NotificationCenter />
+          </div>
         </div>
 
         {/* Recent Applications */}
